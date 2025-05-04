@@ -7,7 +7,7 @@ def auth_func(_, cc, cvv, mes, ano):
     try:
         url = "https://barryxapi.xyz/stripe_auth"
         key = "BRY-FGKD5-MDYRI-56HDM"
-        response = session.get(f"{url}?key={key}&card={fullcc}", timeout=15)
+        response = session.get(f"{url}?key={key}&card={fullcc}", timeout=25)
 
         if response.status_code == 200:
             data = response.json()
