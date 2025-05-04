@@ -98,7 +98,7 @@ async def shopify_menu(client, callback_query: CallbackQuery):
         "━━━━━━━━━━━━━\n"
         "[ϟ] Name: Shopify 2.47$\n"
         "[ϟ] Command: /ss1 cc|mes|ano|cvv\n"
-        "[ϟ] Status: Active ✅",
+        "[ϟ] Status: Active ✅\n"
         "━━━━━━━━━━━━━\n"
         "[ϟ] Name: Shopify 2$\n"
         "[ϟ] Command: /ho cc|mes|ano|cvv\n"
@@ -106,7 +106,7 @@ async def shopify_menu(client, callback_query: CallbackQuery):
         "━━━━━━━━━━━━━\n"
         "[ϟ] Name: Shopify 5.2$\n"
         "[ϟ] Command: /sf cc|mes|ano|cvv\n"
-        "[ϟ] Status: Active ✅\n"
+        "[ϟ] Status: Active ✅\n",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("Back", callback_data="open_gates"),
              InlineKeyboardButton("Close", callback_data="close_ui")]
