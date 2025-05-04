@@ -58,7 +58,7 @@ async def cmd_chk(Client, message):
         tic = time.perf_counter()
         r = session.get(
             f"https://barryxapi.xyz/stripe_charge?key=BRY-FGKD5-MDYRI-56HDM&card={fullcc}",
-            timeout=15
+            timeout=25
         )
 
         try:
