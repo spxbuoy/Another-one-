@@ -70,7 +70,7 @@ async def cmd_sf(Client, message):
         }
 
         try:
-            async with httpx.AsyncClient(timeout=20) as client:
+            async with httpx.AsyncClient(timeout=45) as client:
                 res = await client.post("https://api.voidapi.xyz/v2/shopify_graphql", json=payload)
                 response = res.json()
 
