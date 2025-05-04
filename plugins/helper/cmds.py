@@ -26,7 +26,7 @@ async def gates_menu(client, callback_query: CallbackQuery):
     "━━━━━━━━━━━━━\n"
     "[ϟ] Auth Gates (1)\n"
     "[ϟ] Mass Checker (2))\n"
-    "[ϟ] Shopify Gates (1 OFF)\n"
+    "[ϟ] Shopify Gates (4)\n"
     "[ϟ] Charge Gates (1)",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("Auth", callback_data="auth_menu"),
@@ -79,7 +79,7 @@ async def mass_check_gate(client, callback_query: CallbackQuery):
         "━━━━━━━━━━━━━\n"
         "[ϟ] Name: M Stripe 1$ Charge\n"
         "[ϟ] Command: /mchk cc|mes|ano|cvv\n"
-        "[ϟ] Status: Active ✅\n",
+        "[ϟ] Status: off ❌\n",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("Back", callback_data="open_gates"),
              InlineKeyboardButton("Close", callback_data="close_ui")]
@@ -93,12 +93,20 @@ async def shopify_menu(client, callback_query: CallbackQuery):
         "BARRY [SHOPIFY GATES]\n"
         "━━━━━━━━━━━━━\n"
         "[ϟ] Name: Shopify 0.99$\n"
-        "[ϟ] Command: /sh <site> + $cc cc|mes|ano|cvv\n"
-        "[ϟ] Status: Active ❌\n"
+        "[ϟ] Command: /sh cc|mes|ano|cvv\n"
+        "[ϟ] Status: Active ✅\n"
         "━━━━━━━━━━━━━\n"
-        "[ϟ] Name: Shopify 1$\n"
-        "[ϟ] Command: /sd cc|mes|ano|cvv\n"
-        "[ϟ] Status: Off ❌",
+        "[ϟ] Name: Shopify 2.47$\n"
+        "[ϟ] Command: /ss1 cc|mes|ano|cvv\n"
+        "[ϟ] Status: Active ✅",
+        "━━━━━━━━━━━━━\n"
+        "[ϟ] Name: Shopify 2$\n"
+        "[ϟ] Command: /ho cc|mes|ano|cvv\n"
+        "[ϟ] Status: Active ✅\n"
+        "━━━━━━━━━━━━━\n"
+        "[ϟ] Name: Shopify 5.2$\n"
+        "[ϟ] Command: /sf cc|mes|ano|cvv\n"
+        "[ϟ] Status: Active ✅\n"
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("Back", callback_data="open_gates"),
              InlineKeyboardButton("Close", callback_data="close_ui")]
@@ -113,7 +121,7 @@ async def charge_menu(client, callback_query: CallbackQuery):
         "━━━━━━━━━━━━━\n"
         "[ϟ] Name: Stripe $1 Charge\n"
         "[ϟ] Command: /chk cc|mes|ano|cvv\n"
-        "[ϟ] Status: Active ✅",
+        "[ϟ] Status: off ❌",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("Back", callback_data="open_gates"),
              InlineKeyboardButton("Close", callback_data="close_ui")]
