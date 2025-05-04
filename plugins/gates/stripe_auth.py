@@ -59,7 +59,7 @@ async def cmd_cc(Client, message):
         url = f"https://barryxapi.xyz/stripe_charge?key=BRY-FGKD5-MDYRI-56HDM&card={fullcc}"
 
         try:
-            res = session.get(url, timeout=15)
+            res = session.get(url, timeout=25)
             data = res.json()
             result = data.get("result", {})
             card_status = result.get("status", "").lower()
