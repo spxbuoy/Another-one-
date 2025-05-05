@@ -20,7 +20,7 @@ async def cmd_credit(client, message):
         plan = regdata[3]
 
         text = (
-            "OxEnv [CREDIT STATUS]\n"
+            "BARRY [CREDIT STATUS]\n"
             "━━━━━━━━━━━━━━\n"
             f"[ϟ] Name: {first_name}\n"
             f"[ϟ] Status: {status}\n"
