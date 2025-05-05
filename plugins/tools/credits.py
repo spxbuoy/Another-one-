@@ -1,37 +1,29 @@
 from pyrogram import Client, filters
-from plugins.func.users_sql import *
+from pyrogram.types import Message
+from plugins.func.users_sql import fetchinfo
 
 @Client.on_message(filters.command("credits"))
-async def cmd_credit(client, message):
-    try:
-        user_id = str(message.from_user.id)
-        regdata = fetchinfo(user_id)
-        first_name = message.from_user.first_name or "User"
+async def check_credits(client: Client, message: Message):
+    user_id = message.from_user.id
+    user = fetchinfo(str(user_id))
 
-        if regdata is None:
-            await message.reply_text(
-                "⚠️ You are not registered yet.\nUse /register to get started.",
-                reply_to_message_id=message.id
-            )
-            return
+    if not user:
+        await message.reply_text("❌ You are not registered. Use /register first.", quote=True)
+        return
 
-        credit = regdata[5]
-        status = regdata[2]
-        plan = regdata[3]
+    name = message.from_user.first_name or "User"
+    status = "PREMIUM" if user[2].upper() == "PREMIUM" else "FREE"
+    plan = user[3]
+    credits = f"{int(user[5]):,}"
 
-        text = (
-            "BARRY [CREDIT STATUS]\n"
-            "━━━━━━━━━━━━━━\n"
-            f"[ϟ] Name: {first_name}\n"
-            f"[ϟ] Status: {status}\n"
-            f"[ϟ] Plan: {plan}\n"
-            f"[ϟ] Credits: {credit}\n"
-            "━━━━━━━━━━━━━━\n"
-            "➤ Need more credits? Use /buy"
-        )
-
-        await message.reply_text(text, reply_to_message_id=message.id)
-        await plan_expirychk(user_id)
-
-    except Exception as e:
-        print(f"[ERROR /credits]: {e}")
+    await message.reply_text(
+        f"BARRY [CREDIT STATUS]\n"
+        f"━━━━━━━━━━━━━━\n"
+        f"[ϟ] Name: {name}\n"
+        f"[ϟ] Status: {status}\n"
+        f"[ϟ] Plan: {plan}\n"
+        f"[ϟ] Credits: {credits}\n"
+        f"━━━━━━━━━━━━━━\n"
+        f"➤ Need more credits? Use /buy",
+        quote=True
+    )
