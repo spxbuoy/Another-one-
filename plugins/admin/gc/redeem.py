@@ -20,18 +20,17 @@ async def redeem_code(client, message: Message):
             return await message.reply_text("❌ You are not registered. Please use /register first.")
 
         row = getgc(code)
-        if not row or row[1] != "ACTIVE":
+        if not row or row[1].upper() != "ACTIVE":
             return await message.reply_text("❌ Invalid or already used code.")
 
         plan_text = row[2]
         credits = int(row[3])
 
-        # Try extracting days from dynamic plan like "Premium (365 Days)"
-        days_match = re.search(r"(\d+)", plan_text)
-        if days_match:
-            days = int(days_match.group(1))
-        else:
-            # Fallback for static plans from /sub1, /sub2, /sub3
+        # First try using 'days' column from DB (row[4])
+        try:
+            days = int(row[4])
+        except:
+            # If missing, fallback to plan name
             fallback_days = {
                 "starter": 7,
                 "silver": 15,
@@ -43,9 +42,9 @@ async def redeem_code(client, message: Message):
             if not days:
                 return await message.reply_text("❌ Unknown plan format and no fallback found.")
 
-        # Update user data
+        # Apply gift code
         updategc(code)
-        updatedata(user_id, "credits", int(user_info[5]) + credits)
+        updatedata(user_id, "credits", int(user_info[5] or 0) + credits)
         updatedata(user_id, "plan", plan_text)
         updatedata(user_id, "expiry", str(date.today() + timedelta(days=days)))
         updatedata(user_id, "status", "PREMIUM")
