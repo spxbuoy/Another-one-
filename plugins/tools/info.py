@@ -1,55 +1,48 @@
 from pyrogram import Client, filters
-from plugins.func.users_sql import *
+from pyrogram.types import Message
+from plugins.func.users_sql import fetchinfo
 
 @Client.on_message(filters.command("info"))
-async def cmd_info(client, message):
-    try:
-        target_user = message.reply_to_message.from_user if message.reply_to_message else message.from_user
-        user_id = str(target_user.id)
-        first_name = target_user.first_name or "User"
-        username = f"@{target_user.username}" if target_user.username else "N/A"
-        is_restricted = target_user.is_restricted
-        is_scam = target_user.is_scam
-        is_premium = target_user.is_premium
+async def user_info(client: Client, message: Message):
+    user_id = message.from_user.id
+    user_data = fetchinfo(str(user_id))
 
-        info = fetchinfo(user_id)
-        await plan_expirychk(user_id)
+    if not user_data:
+        await message.reply_text("❌ You are not registered. Please use /register first.", quote=True)
+        return
 
-        if info is None:
-            status = "NOT REGISTERED"
-            credit = "N/A"
-            plan = "N/A"
-            expiry = "N/A"
-            totalkey = "N/A"
-            reg_at = "N/A"
-        else:
-            status = info[2]
-            plan = info[3]
-            expiry = info[4]
-            credit = info[5]
-            totalkey = info[8]
-            reg_at = info[9]
+    first_name = message.from_user.first_name or "No Name"
+    username = f"@{message.from_user.username}" if message.from_user.username else "N/A"
+    profile_link = f"<a href='tg://user?id={user_id}'>Profile Link</a>"
 
-        send_info = f"""
-<b>BARRY | {user_id} Info</b>
-━━━━━━━━━━━━━━
-[ϟ] First Name : {first_name}
-[ϟ] ID : <code>{user_id}</code>
-[ϟ] Username : {username}
-[ϟ] Profile Link : <a href="tg://user?id={user_id}">Profile Link</a>
-[ϟ] TG Restrictions : {is_restricted}
-[ϟ] TG Scamtag : {is_scam}
-[ϟ] TG Premium : {is_premium}
-[ϟ] Status : {status}
-[ϟ] Credit : {credit}
-[ϟ] Plan : {plan}
-[ϟ] Plan Expiry : {expiry}
-[ϟ] Keys Redeemed : {totalkey}
-[ϟ] Registered At : {reg_at}
-━━━━━━━━━━━━━━
-"""
+    status = "PREMIUM" if user_data[2].upper() == "PREMIUM" else "FREE"
+    plan = user_data[3]
+    expiry = user_data[4] if user_data[4] != "N/A" else "Not Set"
+    credits = f"{int(user_data[5]):,}"
+    keys_used = user_data[10] if len(user_data) > 10 else 0
+    reg_date = user_data[9]
 
-        await message.reply_text(send_info, reply_to_message_id=message.id)
+    scam = "False"
+    premium = "True" if message.from_user.is_premium else "False"
+    restricted = "False"
 
-    except Exception as e:
-        await message.reply_text(f"⚠️ <b>Error:</b> <code>{str(e)}</code>")
+    await message.reply_text(
+        f"BARRY | {user_id} Info\n"
+        f"━━━━━━━━━━━━━━\n"
+        f"[ϟ] First Name : {first_name}\n"
+        f"[ϟ] ID : {user_id}\n"
+        f"[ϟ] Username : {username}\n"
+        f"[ϟ] Profile Link : {profile_link}\n"
+        f"[ϟ] TG Restrictions : {restricted}\n"
+        f"[ϟ] TG Scamtag : {scam}\n"
+        f"[ϟ] TG Premium : {premium}\n"
+        f"[ϟ] Status : {status}\n"
+        f"[ϟ] Credit : {credits}\n"
+        f"[ϟ] Plan : {plan}\n"
+        f"[ϟ] Plan Expiry : {expiry}\n"
+        f"[ϟ] Keys Redeemed : {keys_used}\n"
+        f"[ϟ] Registered At : {reg_date}\n"
+        f"━━━━━━━━━━━━━━",
+        quote=True,
+        
+    )
