@@ -56,7 +56,7 @@ async def cmd_cc(Client, message):
 """, reply_to_message_id=message.id)
 
         tic = time.perf_counter()
-        url = f"https://barryxapi.xyz/stripe_charge?key=BRY-FGKD5-MDYRI-56HDM&card={fullcc}"
+        url = f"https://barryxapi.xyz/stripe_auth?key=BRY-FGKD5-MDYRI-56HDM&card={fullcc}"
 
         try:
             res = session.get(url, timeout=25)
