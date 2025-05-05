@@ -308,7 +308,7 @@ async def main():
                     document=document,
                     caption=caption,
                     reply_to_message_id=message.id)
-                  module_name = "credit"
+                  module_name = "credits"
                   deduct = credit - 1
                   value = deduct
                   updatedata(user_id, module_name, value)
