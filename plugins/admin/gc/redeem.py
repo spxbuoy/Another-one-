@@ -3,6 +3,7 @@ from pyrogram.types import Message
 from plugins.func.users_sql import fetchinfo, updatedata
 from plugins.admin.gc.gc_func import getgc, updategc
 from datetime import date, timedelta
+import re
 
 @Client.on_message(filters.command("redeem"))
 async def redeem_code(client, message: Message):
@@ -22,34 +23,30 @@ async def redeem_code(client, message: Message):
         if not row or row[1] != "ACTIVE":
             return await message.reply_text("❌ Invalid or already used code.")
 
-        plan = row[2]
-        credits_map = {
-            "Starter": 500,
-            "Silver": 5000,
-            "Gold": 20000,
-        }
-        days_map = {
-            "Starter": 7,
-            "Silver": 15,
-            "Gold": 30,
-        }
+        plan_text = row[2]
+        credits = int(row[3])
 
-        matched_plan = None
-        for p in credits_map:
-            if p.lower() in plan.lower():
-                matched_plan = p
-                break
+        # Try extracting days from dynamic plan like "Premium (365 Days)"
+        days_match = re.search(r"(\d+)", plan_text)
+        if days_match:
+            days = int(days_match.group(1))
+        else:
+            # Fallback for static plans from /sub1, /sub2, /sub3
+            fallback_days = {
+                "starter": 7,
+                "silver": 15,
+                "gold": 30
+            }
+            lower_plan = plan_text.lower()
+            days = fallback_days.get(lower_plan)
 
-        if not matched_plan:
-            return await message.reply_text("❌ Unknown plan type in the code.")
+            if not days:
+                return await message.reply_text("❌ Unknown plan format and no fallback found.")
 
-        credits = credits_map[matched_plan]
-        days = days_map[matched_plan]
-
-        # Update DB
+        # Update user data
         updategc(code)
         updatedata(user_id, "credits", int(user_info[5]) + credits)
-        updatedata(user_id, "plan", matched_plan)
+        updatedata(user_id, "plan", plan_text)
         updatedata(user_id, "expiry", str(date.today() + timedelta(days=days)))
         updatedata(user_id, "status", "PREMIUM")
 
@@ -61,7 +58,7 @@ async def redeem_code(client, message: Message):
 
         await message.reply_text(
             f"✅ Successfully redeemed <code>{code}</code>\n"
-            f"⭐ Plan upgraded to: <b>{matched_plan}</b>\n"
+            f"⭐ Plan upgraded to: <b>{plan_text}</b>\n"
             f"➕ {credits} Credits added!\n"
             f"🗓️ Valid for {days} Days",
             quote=True
