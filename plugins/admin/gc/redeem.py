@@ -1,80 +1,64 @@
-from plugins.admin.gc.gc_func import getgc, updategc
 from pyrogram import Client, filters
 from pyrogram.types import Message
 from plugins.func.users_sql import fetchinfo, updatedata
-from datetime import date, timedelta
+import sqlite3
 
 @Client.on_message(filters.command("redeem"))
-async def cmd_gc(client: Client, message: Message):
+async def redeem_code(client, message: Message):
     try:
-        user_id = str(message.from_user.id)
-        user_data = fetchinfo(user_id)
+        user_id = message.from_user.id
+        args = message.text.split()
+        if len(args) != 2:
+            return await message.reply_text("⚠️ Usage: <code>/redeem YOUR-CODE</code>", quote=True, )
 
-        if not user_data:
-            await message.reply_text(
-                "❌ You are not registered yet.\nUse <code>/register</code> first.",
-                quote=True
-            )
-            return
+        code = args[1].strip().upper()
 
+        # Check if user is registered
+        user_info = fetchinfo(user_id)
+        if not user_info:
+            return await message.reply_text("❌ You are not registered. Please use /register first.")
+
+        # Connect DB
+        conn = sqlite3.connect("plugins/xcc_db/users.db")
+        c = conn.cursor()
+
+        # Check code exists and not used
+        c.execute("SELECT credits, status FROM keys WHERE code = ? AND used = 0", (code,))
+        key_data = c.fetchone()
+
+        if not key_data:
+            return await message.reply_text("❌ Invalid or already used code.")
+
+        credits_to_add = int(key_data[0])
+        plan_type = key_data[1]
+
+        # Mark code as used
+        c.execute("UPDATE keys SET used = 1 WHERE code = ?", (code,))
+
+        # Update user credits and plan
+        current_info = fetchinfo(user_id)
+        old_credits = int(current_info[5] or 0)
+        new_credits = old_credits + credits_to_add
+
+        updatedata(user_id, "credits", new_credits)
+        updatedata(user_id, "plan", plan_type)
+
+        # Optional: add counter
         try:
-            gift_code = message.text.split(maxsplit=1)[1].strip()
-        except IndexError:
-            await message.reply_text("⚠️ Usage: <code>/redeem YOUR_GIFTCODE</code>", quote=True)
-            return
+            current_total_keys = int(current_info[10] or 0)
+            updatedata(user_id, "totalkey", current_total_keys + 1)
+        except:
+            pass  # skip if totalkey doesn't exist
 
-        code_data = getgc(gift_code)
-        if not code_data:
-            await message.reply_text("❌ Invalid Giftcode.", quote=True)
-            return
+        conn.commit()
+        conn.close()
 
-        status, plan = code_data[1], code_data[2]
-        if status != "ACTIVE":
-            await message.reply_text("⚠️ This Giftcode has already been used.", quote=True)
-            return
-
-        # Handle dynamic days like PREMIUM_7 or PREMIUM_365
-        if plan.startswith("PREMIUM_"):
-            days = int(plan.split("_")[1])
-            plan_name = f"Premium Plan ({days} Days)"
-            credits = 5000
-            expiry = date.today() + timedelta(days=days)
-        else:
-            plan_map = {
-                "PREMIUM": {"credits": 100, "expiry": 0, "plan": None},
-                "PLAN1": {"credits": 1000, "expiry": 7, "plan": "Starter Plan 0.99$"},
-                "PLAN2": {"credits": 2000, "expiry": 15, "plan": "Silver Plan 1.99$"},
-                "PLAN3": {"credits": 5000, "expiry": 30, "plan": "Gold Plan 4.99$"},
-            }
-            if plan not in plan_map:
-                await message.reply_text("❌ Unknown plan type in giftcode.", quote=True)
-                return
-            plan_info = plan_map[plan]
-            plan_name = plan_info["plan"] or "Premium Access"
-            credits = plan_info["credits"]
-            expiry = date.today() + timedelta(days=plan_info["expiry"]) if plan_info["expiry"] else None
-
-        updatedata(user_id, "totalkey", int(user_data[8]) + 1)
-        updatedata(user_id, "credit", int(user_data[5]) + credits)
-        updatedata(user_id, "status", "PREMIUM")
-        if plan_name:
-            updatedata(user_id, "plan", plan_name)
-        if expiry:
-            updatedata(user_id, "expiry", str(expiry))
-
-        updategc(gift_code)
-
-        msg = (
-            f"BARRY [REDEEMED]\n"
-            f"━━━━━━━━━━━━━\n"
-            f"[ϟ] Giftcode: <code>{gift_code}</code>\n"
-            f"[ϟ] Plan: <b>{plan_name}</b>\n"
-            f"[ϟ] Credit: {credits}\n"
-            f"[ϟ] Status: <b>Activated ✅</b>\n"
-            f"━━━━━━━━━━━━━\n"
-            f"<b>Use</b> <code>/info</code> to view your account details."
+        await message.reply_text(
+            f"✅ Successfully redeemed <code>{code}</code>\n"
+            f"➕ Added {credits_to_add} credits\n"
+            f"⭐ Plan upgraded to: <b>{plan_type}</b>",
+            quote=True, 
         )
-        await message.reply_text(msg, quote=True)
 
     except Exception as e:
-        await message.reply_text(f"❌ Error: <code>{e}</code>", quote=True)
+        await message.reply_text(f"❌ Error: {e}", quote=True)
