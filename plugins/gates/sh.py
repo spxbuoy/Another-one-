@@ -79,7 +79,7 @@ async def cmd_sh(client, message):
                 "card": fullcc,
                 "product_url": "https://godless.com/collections/the-drop-all-new-shit/products/dark-corners-on-flat-surfaces-by-adler-tittle",
                 "email": None,
-                "proxy": "proxy.speedproxies.net:12321:uipido7851df:6691eddcc9f9_country-us",
+                "proxy": "proxy.rampageproxies.com:5000:package-1111111-country-us-city-bloomington-region-indiana:5671nuWwEPrHCw2t",
                 "ship_address": None,
                 "is_shippable": False
             }
