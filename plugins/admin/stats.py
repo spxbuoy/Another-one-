@@ -1,5 +1,6 @@
 from pyrogram import Client, filters
-from plugins.func.users_sql import get_user_stats, getalldata
+from plugins.func.users_sql import getalldata
+from datetime import datetime
 
 OWNER_ID = "6440962840"
 
@@ -7,15 +8,16 @@ OWNER_ID = "6440962840"
 async def stats_cmd(Client, message):
     try:
         user_id = str(message.from_user.id)
-
         if user_id != OWNER_ID:
             return await message.reply_text("<b>╰┈➤ You are not the owner!</b>", message.id)
 
-        total_users, premium_users = get_user_stats()
         all_users = getalldata()
 
+        total_users = len(all_users)
         free_users = 0
-        paid_users = 0
+        premium_users = 0
+        manual_premium = 0
+        redeemed_premium = 0
         starter_users = 0
         silver_users = 0
         gold_users = 0
@@ -23,11 +25,16 @@ async def stats_cmd(Client, message):
         for user in all_users:
             status = user[2]
             plan = user[3]
+            totalkey = int(user[10] or 0)
 
             if status == "FREE":
                 free_users += 1
             elif status == "PREMIUM":
-                paid_users += 1
+                premium_users += 1
+                if totalkey > 0:
+                    redeemed_premium += 1
+                else:
+                    manual_premium += 1
 
             if plan == "STARTER":
                 starter_users += 1
@@ -36,24 +43,28 @@ async def stats_cmd(Client, message):
             elif plan == "GOLD":
                 gold_users += 1
 
+        checked_on = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+
         text = f"""
 <b>┏━━━━━━━⍟</b>
-<b>┃ STATS GATE</b>
+<b>┃ 𝗕𝗢𝗧 𝗨𝗦𝗘𝗥 𝗦𝗧𝗔𝗧𝗦</b>
 <b>┗━━━━━━━━━━━⊛</b>
-<b>• Database:</b> <code>SQLite</code>
 
-<b>• Registered Users:</b> <code>{total_users}</code>
+<b>• Database:</b> <code>SQLite</code>
+<b>• Total Users:</b> <code>{total_users}</code>
 <b>• Free Users:</b> <code>{free_users}</code>
 <b>• Premium Users:</b> <code>{premium_users}</code>
-<b>• Starter Users:</b> <code>{starter_users}</code>
-<b>• Silver Users:</b> <code>{silver_users}</code>
-<b>• Gold Users:</b> <code>{gold_users}</code>
-<b>• Active User Ratio:</b> <code>{premium_users * 3}</code>
+<b>    ├─ Manual Premium:</b> <code>{manual_premium}</code>
+<b>    └─ Redeemed Code:</b> <code>{redeemed_premium}</code>
 
-<b>• Status:</b> <code>Running</code>
-<b>• Checked On:</b> <code>{message.date}</code>
+<b>• Starter Plan:</b> <code>{starter_users}</code>
+<b>• Silver Plan:</b> <code>{silver_users}</code>
+<b>• Gold Plan:</b> <code>{gold_users}</code>
+
+<b>• Status:</b> <code>Online</code>
+<b>• Checked On:</b> <code>{checked_on}</code>
 """
-        await message.reply_text(text, message.id)
+        await message.reply_text(text.strip(), message.id)
 
     except Exception as e:
         await message.reply_text(f"<b>❌ Error:</b> <code>{e}</code>")
