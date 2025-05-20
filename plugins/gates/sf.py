@@ -79,7 +79,7 @@ async def cmd_sf(client, message):
                 "card": fullcc,
                 "product_url": "https://wcbbstore.com/products/donate?variant=40108999835747",
                 "email": None,
-                "proxy": "proxy.speedproxies.net:12321:Indexui184a999e:4fba9e5235e8_country-us",
+                "proxy": "proxy.rampageproxies.com:5000:package-1111111-country-us-city-bloomington-region-indiana:5671nuWwEPrHCw2t",
                 "ship_address": None,
                 "is_shippable": False
             }
