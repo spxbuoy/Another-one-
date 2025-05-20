@@ -15,7 +15,7 @@ async def main():
   bot = Client("my_bot",
                api_id="22092598",
                api_hash="93de73c78293c85fd6feddb92f91b81a",
-               bot_token="7393252205:AAG55M3Zv9cOnTVoHS3a3FDlMOzxVVAqPf4",
+               bot_token="7220432208:AAEhGXTqP2pcjUz3J3XSYLDY9qdVKpyirKc",
                plugins=plugins)
   clients = [user, bot]
   bot.set_parse_mode(enums.ParseMode.HTML)
@@ -91,7 +91,7 @@ async def main():
             elif status == 'PREMIUM' and limit > 60000:
 
               resp = f"""
-𝗣𝗥𝗘𝗠𝗜𝗨𝗠 𝗨𝗦𝗘𝗥 𝗔𝗥𝗘 𝗟𝗜𝗠𝗜𝗧𝗘𝗗 𝗧𝗢 𝟲𝟬𝟬𝟬𝟬 𝗦𝗖𝗥𝗔𝗣𝗜𝗡𝗚 𝗟𝗜𝗠𝗜𝗧 ❌
+𝗣𝗥𝗘𝗠𝗜𝗨𝗠 𝗨𝗦𝗘𝗥 𝗔𝗥𝗘 𝗟𝗜𝗠𝗜𝗧𝗘𝗗 𝗧𝗢 𝟲𝟬𝟬𝟬0 𝗦𝗖𝗥𝗔𝗣𝗜𝗡𝗚 𝗟𝗜𝗠𝗜𝗧 ❌
                 """
               await message.reply_text(resp, message.id)
 
@@ -231,7 +231,7 @@ async def main():
                         document=document,
                         caption=caption,
                         reply_to_message_id=message.id)
-                      module_name = "credit"
+                      module_name = "credits"
                       deduct = credit - 1
                       value = deduct
                       updatedata(user_id, module_name, value)
@@ -355,3 +355,4 @@ async def main():
 
 
 asyncio.run(main())
+
