@@ -77,7 +77,7 @@ async def cmd_ho(client, message):
                 "card": fullcc,
                 "product_url": "https://cowdengarden.com/products/donation",
                 "email": None,
-                "proxy": "proxy.geonode.io:9000:geonode_PmcmU0FNP2-type-residential:250868f4-26b6-4a5c-a39a-22a7e2929624",
+                "proxy": "proxy.rampageproxies.com:5000:package-1111111-country-us:5671nuWwEPrHCw2t",
                 "ship_address": None,
                 "is_shippable": False
             }
