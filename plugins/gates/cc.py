@@ -52,11 +52,10 @@ async def cmd_cc(Client, message):
         antispam_time = int(regdata[7] or 0)
         now = int(time.time())
 
-        # ✅ BLOCK FREE USERS IN BOT PM
         if chat_type == ChatType.PRIVATE and role == "FREE":
             return await message.reply_text(
                 "⚠️ <b>Premium Users Required</b>\n"
-                "Only PREMIUM users can use this command in bot PM.\n"
+                "Only Premium users can use this command in bot PM.\n"
                 "Join our group to use it for FREE:",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("Join Group", url="https://t.me/+Rl9oTRlGfbIwZDhk")]
@@ -75,8 +74,8 @@ async def cmd_cc(Client, message):
             return await message.reply_text(f"⏳ Wait {wait_time - (now - antispam_time)}s (AntiSpam)")
 
         cc_text = None
-        if message.reply_to_message and message.reply_to_message.text:
-            cc_text = message.reply_to_message.text.strip()
+        if message.reply_to_message:
+            cc_text = (message.reply_to_message.text or message.reply_to_message.caption or "").strip()
         elif len(message.text.split(maxsplit=1)) > 1:
             cc_text = message.text.split(maxsplit=1)[1].strip()
 
