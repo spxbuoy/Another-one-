@@ -46,12 +46,9 @@ async def cmd_clover(Client, message):
         if now - antispam_time < wait_time:
             return await message.reply_text(f"⏳ Wait {wait_time - (now - antispam_time)}s (AntiSpam)")
 
-        cc_text = None
-        if message.reply_to_message:
-            cc_text = message.reply_to_message.text or message.reply_to_message.caption
-        elif len(message.text.split(maxsplit=1)) > 1:
-            cc_text = message.text.split(maxsplit=1)[1]
-
+        cc_text = message.reply_to_message.text if message.reply_to_message else (
+            message.text.split(maxsplit=1)[1] if len(message.text.split()) > 1 else None
+        )
         if not cc_text:
             return await message.reply_text("❌ Usage: /cl <cc|mm|yy|cvv> or reply to message")
 
@@ -87,16 +84,15 @@ async def cmd_clover(Client, message):
         try:
             binres = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", timeout=10).json()
             brand = binres.get("brand") or binres.get("scheme") or "UNKNOWN"
-            type_ = binres.get("type", "N/A")
-            level = binres.get("level", "N/A")
-            bank = binres.get("bank", "N/A")
-            country = binres.get("country_name", "N/A")
-            flag = binres.get("country_flag", "🏳️")
+            type_ = binres.get("type") or "N/A"
+            level = binres.get("level") or "N/A"
+            bank = binres.get("bank") or "N/A"
+            country = binres.get("country_name") or "N/A"
+            flag = binres.get("country_flag") or "🏳️"
         except:
-            brand = type_ = level = bank = country = "N/A"
-            flag = "🏳️"
+            brand = type_ = level = bank = country = flag = "N/A"
 
-        brand, type_, level, bank, country = [i.upper() for i in [brand, type_, level, bank, country]]
+        brand, type_, level, bank, country = [str(x).upper() for x in [brand, type_, level, bank, country]]
 
         status = "Approved ✅" if any(x in card_message.lower() for x in ["live", "approved", "cvv", "avs", "postal", "zip"]) else "Declined ❌"
 
@@ -114,14 +110,17 @@ async def cmd_clover(Client, message):
 <b>❛ ━━━━・⌁ 𝑩𝑨𝑹𝑹𝒀 ⌁・━━━━ ❜</b>
 """
 
+        # Only one result send & edit
         await Client.edit_message_text(chat_id, check_msg.id, final_msg)
 
+        # Hit forward if approved
         if "approved" in status.lower() or "live" in card_message.lower():
             await send_hit_if_approved(Client, final_msg)
 
+        # Update stats
         updatedata(user_id, "credits", credit - 1)
         updatedata(user_id, "antispam_time", now)
         plan_expirychk(user_id)
 
     except Exception as e:
-        await message.reply_text(f"❌ Error: {str(e)}")
+        await message.reply_text(f"❌ Error: {str(e)}", quote=True)
