@@ -28,12 +28,13 @@ async def cmd_ss1(client, message):
 
         if chat_type == ChatType.PRIVATE and role == "FREE":
             return await message.reply_text(
-                "Premium Users Required ⚠️\n"
-                "Only Premium Users can use this command in bot PM.\n"
-                "Join group for free use:",
-                reply_markup=InlineKeyboardMarkup(
-                    [[InlineKeyboardButton("Join Group", url="https://t.me/+Rl9oTRlGfbIwZDhk")]]
-                ), disable_web_page_preview=True
+                "⚠️ <b>Premium Users Required</b>\n"
+                "Only Premium users can use this command in bot PM.\n"
+                "Join our group to use it for FREE:",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("Join Group", url="https://t.me/+Rl9oTRlGfbIwZDhk")]
+                ]),
+                disable_web_page_preview=True
             )
 
         GROUP = open("plugins/group.txt").read().splitlines()
@@ -46,11 +47,16 @@ async def cmd_ss1(client, message):
         if now - antispam_time < wait_time:
             return await message.reply_text(f"⏳ Wait {wait_time - (now - antispam_time)}s (AntiSpam)")
 
-        cc_text = message.reply_to_message.text.strip() if message.reply_to_message else message.text.split(maxsplit=1)[1].strip() if len(message.text.split()) > 1 else None
+        cc_text = None
+        if message.reply_to_message:
+            cc_text = message.reply_to_message.text or message.reply_to_message.caption
+        elif len(message.text.split(maxsplit=1)) > 1:
+            cc_text = message.text.split(maxsplit=1)[1]
+
         if not cc_text:
             return await message.reply_text("❌ Send a card after /ss1")
 
-        match = re.search(r'(\d{12,16})[|:\s,-](\d{1,2})[|:\s,-](\d{2,4})[|:\s,-](\d{3,4})', cc_text)
+        match = re.search(r'(\d{12,16})[^\d]?(\d{1,2})[^\d]?(\d{2,4})[^\d]?(\d{3,4})', cc_text)
         if not match:
             return await message.reply_text("❌ Invalid format. Use cc|mm|yy|cvv")
 
@@ -99,9 +105,10 @@ async def cmd_ss1(client, message):
             level = bin_data.get("level") or "N/A"
             bank = bin_data.get("bank") or "N/A"
             country = bin_data.get("country_name") or "N/A"
-            flag = bin_data.get("country_flag") or ""
+            flag = bin_data.get("country_flag") or "🏳️"
         except:
-            brand = type_ = level = bank = country = flag = "N/A"
+            brand = type_ = level = bank = country = "N/A"
+            flag = "🏳️"
 
         final_msg = f"""
 <code>┏━━━━━━━⍟</code>
@@ -118,6 +125,7 @@ async def cmd_ss1(client, message):
 """
 
         await client.edit_message_text(chat_id, check_msg.id, final_msg)
+
         if "approved" in status.lower() or "live" in msg.lower():
             await send_hit_if_approved(client, final_msg)
 
