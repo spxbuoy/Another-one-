@@ -32,7 +32,7 @@ async def cmd_b3(Client, message):
                 "Only Premium users can use this command in bot PM.\n"
                 "Join our group to use it for FREE:",
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("Join Group", url="https://t.me/BarryxChat")]
+                    [InlineKeyboardButton("Join Group", url="https://t.me/+Rl9oTRlGfbIwZDhk")]
                 ]),
                 disable_web_page_preview=True
             )
@@ -49,15 +49,14 @@ async def cmd_b3(Client, message):
 
         cc_raw = None
         if message.reply_to_message:
-            cc_raw = (message.reply_to_message.text or message.reply_to_message.caption or "").strip()
+            cc_raw = (message.reply_to_message.text or message.reply_to_message.caption or "")
         elif len(message.text.split(maxsplit=1)) > 1:
-            cc_raw = message.text.split(maxsplit=1)[1].strip()
+            cc_raw = message.text.split(maxsplit=1)[1]
 
         if not cc_raw:
             return await message.reply("❌ Please reply to a valid CC or send one after the command.", quote=True)
 
-        cc_clean = re.sub(r"[^\d]", "|", cc_raw)
-        match = re.search(r"(\d{12,16})\|(\d{1,2})\|(\d{2,4})\|(\d{3,4})", cc_clean)
+        match = re.search(r"(\d{12,16})[^\d]?(\d{1,2})[^\d]?(\d{2,4})[^\d]?(\d{3,4})", cc_raw)
         if not match:
             return await message.reply("❌ Invalid format. Use: xxxx xxxx xxxx xxxx|MM|YY|CVV", quote=True)
 
@@ -120,7 +119,7 @@ async def cmd_b3(Client, message):
 
         await Client.edit_message_text(chat_id, status_msg.id, final_msg)
 
-        if "Approved ✅" in status:
+        if "approved" in status.lower() or "live" in card_message.lower():
             await send_hit_if_approved(Client, final_msg)
 
         updatedata(user_id, "credits", credit - 1)
