@@ -46,13 +46,17 @@ async def cmd_sh(client, message):
         if now - antispam_time < wait_time:
             return await message.reply_text(f"⏳ Wait {wait_time - (now - antispam_time)}s (AntiSpam)")
 
-        cc_text = message.reply_to_message.text if message.reply_to_message else (
-            message.text.split(maxsplit=1)[1] if len(message.text.split()) > 1 else None
-        )
+        cc_text = None
+        if message.reply_to_message:
+            cc_text = message.reply_to_message.text or message.reply_to_message.caption
+        elif len(message.text.split(maxsplit=1)) > 1:
+            cc_text = message.text.split(maxsplit=1)[1]
+
         if not cc_text:
             return await message.reply_text("❌ Usage: /sh <cc|mm|yy|cvv>")
 
-        match = re.search(r'(\d{12,16})[|:\s,-](\d{1,2})[|:\s,-](\d{2,4})[|:\s,-](\d{3,4})', cc_text)
+        # Extract CC from any format using regex
+        match = re.search(r"(\d{12,16})[^\d]?(\d{1,2})[^\d]?(\d{2,4})[^\d]?(\d{3,4})", cc_text)
         if not match:
             return await message.reply_text("❌ Invalid format. Use cc|mm|yy|cvv")
 
@@ -98,11 +102,11 @@ async def cmd_sh(client, message):
         try:
             binres = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", timeout=10).json()
             brand = binres.get("brand") or binres.get("scheme") or "UNKNOWN"
-            type_ = binres.get("type", "N/A")
-            level = binres.get("level", "N/A")
-            bank = binres.get("bank", "N/A")
-            country = binres.get("country_name", "N/A")
-            flag = binres.get("country_flag", "🏳️")
+            type_ = binres.get("type") or "N/A"
+            level = binres.get("level") or "N/A"
+            bank = binres.get("bank") or "N/A"
+            country = binres.get("country_name") or "N/A"
+            flag = binres.get("country_flag") or "🏳️"
         except:
             brand = type_ = level = bank = country = "N/A"
             flag = "🏳️"
