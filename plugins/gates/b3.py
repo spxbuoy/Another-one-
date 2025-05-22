@@ -87,21 +87,19 @@ async def cmd_b3(Client, message):
 
         toc = time.perf_counter()
 
-        bin_ = ccnum[:6]
-        brand = type_ = level = bank = country = flag = "N/A"
         try:
-            bin_res = session.get(f"https://api.voidex.dev/api/bin?bin={bin_}", timeout=10).json()
-            brand = bin_res.get("scheme") or bin_res.get("vendor") or brand
-            type_ = bin_res.get("type") or type_
-            level = bin_res.get("level") or bin_res.get("brand") or level
-            bank = bin_res.get("bank") or bank
-            country = bin_res.get("country_name") or country
-            flag = bin_res.get("country_flag") or flag
+            binres = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", timeout=10).json()
+            brand = binres.get("brand") or binres.get("scheme") or "UNKNOWN"
+            type_ = binres.get("type", "N/A")
+            level = binres.get("level", "N/A")
+            bank = binres.get("bank", "N/A")
+            country = binres.get("country_name", "N/A")
+            flag = binres.get("country_flag", "🏳️")
         except:
-            pass
+            brand = type_ = level = bank = country = "N/A"
+            flag = "🏳️"
 
-        brand, type_, level, bank, country = [str(i or "N/A").upper() for i in [brand, type_, level, bank, country]]
-        flag = flag or "N/A"
+        brand, type_, level, bank, country = [i.upper() for i in [brand, type_, level, bank, country]]
 
         live_keywords = ["avs", "duplicate", "already exists", "cvc", "zip"]
         status = "Approved ✅" if any(kw in card_message.lower() for kw in live_keywords) or card_status == "success" else "Declined ❌"
