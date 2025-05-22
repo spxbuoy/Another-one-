@@ -52,8 +52,8 @@ async def cmd_cc(Client, message):
         antispam_time = int(regdata[7] or 0)
         now = int(time.time())
 
-        # BLOCK FREE USERS IN BOT PM
-        if chat_type == "ChatType.PRIVATE" and role == "FREE":
+        # ✅ BLOCK FREE USERS IN BOT PM
+        if chat_type == ChatType.PRIVATE and role == "FREE":
             return await message.reply_text(
                 "⚠️ <b>Premium Users Required</b>\n"
                 "Only PREMIUM users can use this command in bot PM.\n"
