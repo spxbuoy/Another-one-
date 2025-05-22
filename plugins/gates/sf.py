@@ -14,7 +14,7 @@ async def cmd_sf(client, message):
         user_id = str(message.from_user.id)
         username = message.from_user.username or "None"
         chat_id = message.chat.id
-        chat_type = str(message.chat.type)
+        chat_type = message.chat.type
 
         regdata = fetchinfo(user_id)
         if not regdata:
@@ -28,9 +28,9 @@ async def cmd_sf(client, message):
 
         if chat_type == ChatType.PRIVATE and role == "FREE":
             return await message.reply_text(
-                "Premium Users Required ⚠️\n"
-                "Only Premium Users can use this command in bot PM.\n"
-                "Join group for free use:",
+                "⚠️ <b>Premium Users Required</b>\n"
+                "Only Premium users can use this command in bot PM.\n"
+                "Join our group to use it for FREE:",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("Join Group", url="https://t.me/+Rl9oTRlGfbIwZDhk")]
                 ]),
@@ -43,16 +43,21 @@ async def cmd_sf(client, message):
 
         if credit < 1:
             return await message.reply_text("❌ Insufficient credit.")
+
         if now - antispam_time < wait_time:
             return await message.reply_text(f"⏳ AntiSpam: wait {wait_time - (now - antispam_time)}s")
 
-        cc_text = message.reply_to_message.text if message.reply_to_message else (
-            message.text.split(maxsplit=1)[1] if len(message.text.split()) > 1 else None
-        )
+        # Handle text from reply or command
+        cc_text = None
+        if message.reply_to_message:
+            cc_text = message.reply_to_message.text or message.reply_to_message.caption
+        elif len(message.text.split(maxsplit=1)) > 1:
+            cc_text = message.text.split(maxsplit=1)[1]
+
         if not cc_text:
             return await message.reply_text("❌ Usage: /sf <cc|mm|yy|cvv>")
 
-        match = re.search(r'(\d{12,16})[|:\s,-](\d{1,2})[|:\s,-](\d{2,4})[|:\s,-](\d{3,4})', cc_text)
+        match = re.search(r'(\d{12,16})[^\d]?(\d{1,2})[^\d]?(\d{2,4})[^\d]?(\d{3,4})', cc_text)
         if not match:
             return await message.reply_text("❌ Invalid format. Use cc|mm|yy|cvv")
 
