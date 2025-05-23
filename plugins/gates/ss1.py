@@ -43,7 +43,6 @@ async def cmd_ss1(client, message):
 
         if credit < 1:
             return await message.reply_text("❌ Insufficient credit.")
-
         if now - antispam_time < wait_time:
             return await message.reply_text(f"⏳ Wait {wait_time - (now - antispam_time)}s (AntiSpam)")
 
@@ -69,7 +68,7 @@ async def cmd_ss1(client, message):
 <code>┗━━━━━━━━━━━⊛</code>
 <b>⊙ CC:</b> <code>{fullcc}</code>
 <b>⊙ Status:</b> Checking...
-<b>⊙ Response:</b> Awaiting...
+<b>⊙ Response:</b> Waiting...
 """)
 
         tic = time.perf_counter()
@@ -99,14 +98,23 @@ async def cmd_ss1(client, message):
         toc = time.perf_counter()
 
         try:
-            bin_data = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", timeout=10).json()
-            brand = bin_data.get("brand") or bin_data.get("scheme") or "UNKNOWN"
-            type_ = bin_data.get("type") or "N/A"
-            level = bin_data.get("level") or "N/A"
-            bank = bin_data.get("bank") or "N/A"
-            country = bin_data.get("country_name") or "N/A"
-            flag = bin_data.get("country_flag") or "🏳️"
-        except:
+            headers = {
+                "User-Agent": "Mozilla/5.0",
+                "Accept": "application/json"
+            }
+            proxies = {
+                "http": "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000",
+                "https": "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
+            }
+            binres = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", headers=headers, proxies=proxies, timeout=15).json()
+            brand = str(binres.get("brand") or binres.get("scheme") or "N/A").upper()
+            type_ = str(binres.get("type", "N/A")).upper()
+            level = str(binres.get("level", "N/A")).upper()
+            bank = str(binres.get("bank", "N/A")).upper()
+            country = str(binres.get("country_name", "N/A")).upper()
+            flag = binres.get("country_flag") or "🏳️"
+        except Exception as e:
+            print("[DEBUG] BIN Proxy Error:", str(e))
             brand = type_ = level = bank = country = "N/A"
             flag = "🏳️"
 
