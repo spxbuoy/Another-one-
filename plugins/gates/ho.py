@@ -52,7 +52,6 @@ async def cmd_ho(client, message):
         if not cc_text:
             return await message.reply_text("❌ Usage: /ho <cc|mm|yy|cvv>")
 
-        # Regex to extract any format
         match = re.search(r"(\d{12,16})[^\d]?(\d{1,2})[^\d]?(\d{2,4})[^\d]?(\d{3,4})", cc_text)
         if not match:
             return await message.reply_text("❌ Invalid format. Use cc|mm|yy|cvv")
@@ -98,18 +97,27 @@ async def cmd_ho(client, message):
         toc = time.perf_counter()
 
         try:
-            binres = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", timeout=10).json()
-            brand = binres.get("brand") or binres.get("scheme") or "UNKNOWN"
-            type_ = binres.get("type", "N/A")
-            level = binres.get("level", "N/A")
-            bank = binres.get("bank", "N/A")
-            country = binres.get("country_name", "N/A")
-            flag = binres.get("country_flag", "")
-        except:
-            brand = type_ = level = bank = country = flag = "N/A"
+            headers = {
+                "User-Agent": "Mozilla/5.0",
+                "Accept": "application/json"
+            }
+            proxies = {
+                "http": "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000",
+                "https": "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
+            }
+            res = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", headers=headers, proxies=proxies, timeout=15)
+            binres = res.json()
+            brand = str(binres.get("brand") or binres.get("scheme") or "N/A").upper()
+            type_ = str(binres.get("type", "N/A")).upper()
+            level = str(binres.get("level", "N/A")).upper()
+            bank = str(binres.get("bank", "N/A")).upper()
+            country = str(binres.get("country_name", "N/A")).upper()
+            flag = binres.get("country_flag") or "🏳️"
+        except Exception as e:
+            print("[DEBUG] BIN Proxy Error:", str(e))
+            brand = type_ = level = bank = country = "N/A"
+            flag = "🏳️"
 
-        brand, type_, level, bank, country = [str(i or "N/A").upper() for i in [brand, type_, level, bank, country]]
-        flag = flag or ""
         status = "Approved ✅" if card_status == "approved" else "Declined ❌"
 
         final_msg = f"""
