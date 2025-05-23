@@ -18,7 +18,7 @@ async def cmd_clover(Client, message):
 
         regdata = fetchinfo(user_id)
         if not regdata:
-            return await message.reply_text("❌ You are not registered. Use /register first.")
+            return await message.reply("❌ You are not registered. Use /register first.", quote=True)
 
         role = (regdata[2] or "FREE").strip().upper()
         credit = int(regdata[5] or 0)
@@ -28,9 +28,7 @@ async def cmd_clover(Client, message):
 
         if chat_type == ChatType.PRIVATE and role == "FREE":
             return await message.reply_text(
-                "⚠️ <b>Premium Users Required</b>\n"
-                "Only Premium users can use this command in bot PM.\n"
-                "Join our group to use it for FREE:",
+                "⚠️ <b>Premium Users Required</b>\nOnly Premium users can use this command in bot PM.\nJoin our group to use it for FREE:",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("Join Group", url="https://t.me/+Rl9oTRlGfbIwZDhk")]
                 ]),
@@ -39,27 +37,27 @@ async def cmd_clover(Client, message):
 
         GROUP = open("plugins/group.txt").read().splitlines()
         if chat_type in [ChatType.GROUP, ChatType.SUPERGROUP] and str(chat_id) not in GROUP:
-            return await message.reply_text("❌ Unauthorized group. Contact admin.")
+            return await message.reply("❌ Unauthorized group. Contact admin.", quote=True)
 
         if credit < 1:
-            return await message.reply_text("❌ Insufficient credit.")
+            return await message.reply("❌ Insufficient credit.", quote=True)
         if now - antispam_time < wait_time:
-            return await message.reply_text(f"⏳ Wait {wait_time - (now - antispam_time)}s (AntiSpam)")
+            return await message.reply(f"⏳ Wait {wait_time - (now - antispam_time)}s", quote=True)
 
         cc_text = message.reply_to_message.text if message.reply_to_message else (
             message.text.split(maxsplit=1)[1] if len(message.text.split()) > 1 else None
         )
         if not cc_text:
-            return await message.reply_text("❌ Usage: /cl <cc|mm|yy|cvv> or reply to message")
+            return await message.reply("❌ Usage: /cl <cc|mm|yy|cvv>", quote=True)
 
         match = re.search(r"(\d{12,16})[^\d]?(\d{1,2})[^\d]?(\d{2,4})[^\d]?(\d{3,4})", cc_text)
         if not match:
-            return await message.reply_text("❌ No valid CC found in reply or command.")
+            return await message.reply("❌ Invalid format. Use: xxxx xxxx xxxx xxxx|MM|YY|CVV", quote=True)
 
         ccnum, mes, ano, cvv = match.groups()
         fullcc = f"{ccnum}|{mes}|{ano}|{cvv}"
 
-        check_msg = await message.reply_text(f"""
+        status_msg = await message.reply(f"""
 <code>┏━━━━━━━⍟</code>
 <b>┃  Clover 1$</b>
 <code>┗━━━━━━━━━━━⊛</code>
@@ -80,19 +78,24 @@ async def cmd_clover(Client, message):
 
         toc = time.perf_counter()
 
-        # BIN lookup
         try:
-            binres = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", timeout=10).json()
-            brand = binres.get("brand") or binres.get("scheme") or "UNKNOWN"
-            type_ = binres.get("type") or "N/A"
-            level = binres.get("level") or "N/A"
-            bank = binres.get("bank") or "N/A"
-            country = binres.get("country_name") or "N/A"
+            headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
+            proxies = {
+                "http": "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000",
+                "https": "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
+            }
+            url = f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}"
+            binres = session.get(url, headers=headers, proxies=proxies, timeout=15).json()
+            brand = str(binres.get("brand") or binres.get("scheme") or "N/A").upper()
+            type_ = str(binres.get("type", "N/A")).upper()
+            level = str(binres.get("level", "N/A")).upper()
+            bank = str(binres.get("bank", "N/A")).upper()
+            country = str(binres.get("country_name", "N/A")).upper()
             flag = binres.get("country_flag") or "🏳️"
-        except:
-            brand = type_ = level = bank = country = flag = "N/A"
-
-        brand, type_, level, bank, country = [str(x).upper() for x in [brand, type_, level, bank, country]]
+        except Exception as e:
+            print("[BIN ERROR]", e)
+            brand = type_ = level = bank = country = "N/A"
+            flag = "🏳️"
 
         status = "Approved ✅" if any(x in card_message.lower() for x in ["live", "approved", "cvv", "avs", "postal", "zip"]) else "Declined ❌"
 
@@ -110,14 +113,11 @@ async def cmd_clover(Client, message):
 <b>❛ ━━━━・⌁ 𝑩𝑨𝑹𝑹𝒀 ⌁・━━━━ ❜</b>
 """
 
-        # Only one result send & edit
-        await Client.edit_message_text(chat_id, check_msg.id, final_msg)
+        await Client.edit_message_text(chat_id, status_msg.id, final_msg)
 
-        # Hit forward if approved
         if "approved" in status.lower() or "live" in card_message.lower():
             await send_hit_if_approved(Client, final_msg)
 
-        # Update stats
         updatedata(user_id, "credits", credit - 1)
         updatedata(user_id, "antispam_time", now)
         plan_expirychk(user_id)
