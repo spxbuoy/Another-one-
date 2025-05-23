@@ -87,18 +87,26 @@ async def cmd_b3(Client, message):
         toc = time.perf_counter()
 
         try:
-            binres = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", timeout=10).json()
-            brand = binres.get("brand") or binres.get("scheme") or "UNKNOWN"
-            type_ = binres.get("type", "N/A")
-            level = binres.get("level", "N/A")
-            bank = binres.get("bank", "N/A")
-            country = binres.get("country_name", "N/A")
-            flag = binres.get("country_flag", "🏳️")
-        except:
+            headers = {
+                "User-Agent": "Mozilla/5.0",
+                "Accept": "application/json"
+            }
+            proxies = {
+                "http": "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000",
+                "https": "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
+            }
+            res = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", headers=headers, proxies=proxies, timeout=15)
+            binres = res.json()
+            brand = str(binres.get("brand") or binres.get("scheme") or "N/A").upper()
+            type_ = str(binres.get("type", "N/A")).upper()
+            level = str(binres.get("level", "N/A")).upper()
+            bank = str(binres.get("bank", "N/A")).upper()
+            country = str(binres.get("country_name", "N/A")).upper()
+            flag = binres.get("country_flag") or "🏳️"
+        except Exception as e:
+            print("[DEBUG] BIN Proxy Error:", str(e))
             brand = type_ = level = bank = country = "N/A"
             flag = "🏳️"
-
-        brand, type_, level, bank, country = [i.upper() for i in [brand, type_, level, bank, country]]
 
         live_keywords = ["avs", "duplicate", "already exists", "cvc", "zip"]
         status = "Approved ✅" if any(kw in card_message.lower() for kw in live_keywords) or card_status == "success" else "Declined ❌"
