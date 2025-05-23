@@ -97,7 +97,7 @@ async def cmd_clover(Client, message):
             brand = type_ = level = bank = country = "N/A"
             flag = "🏳️"
 
-        status = "Approved ✅" if any(x in card_message.lower() for x in ["live", "approved", "cvv", "avs", "postal", "zip"]) else "Declined ❌"
+        status = "Approved ✅" if any(x in card_message.lower() for x in ["charged", "live", "approved", "cvv", "avs", "postal", "zip"]) else "Declined ❌"
 
         final_msg = f"""
 <code>┏━━━━━━━⍟</code>
@@ -115,7 +115,7 @@ async def cmd_clover(Client, message):
 
         await Client.edit_message_text(chat_id, status_msg.id, final_msg)
 
-        if "approved" in status.lower() or "live" in card_message.lower():
+        if "approved" in status.lower() or "live" in card_message.lower() or "charged" in card_message.lower():
             await send_hit_if_approved(Client, final_msg)
 
         updatedata(user_id, "credits", credit - 1)
