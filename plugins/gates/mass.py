@@ -1,19 +1,21 @@
 from pyrogram import Client, filters
-import re, time, concurrent.futures
+import re, time, asyncio
 from plugins.func.users_sql import *
-from plugins.gates.func.mass_auth_func import auth_func
+from plugins.gates.func.mass_auth_func import async_auth_func
 from datetime import date
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-@Client.on_message(filters.command("mass"))
+@Client.on_message(filters.command("mass", prefixes=["/", "."]))
 async def cmd_mass(Client, message):
     try:
         user_id = str(message.from_user.id)
         username = message.from_user.username or "None"
         user_name = message.from_user.first_name
         chat_id = message.chat.id
+        msg_id = message.id
         chat_type = str(message.chat.type)
 
+        # Auto-registration
         reg = fetchinfo(user_id)
         if not reg:
             insert_reg_data(user_id, username, 0, str(date.today()))
@@ -27,62 +29,85 @@ async def cmd_mass(Client, message):
         GROUP = open("plugins/group.txt").read().splitlines()
         if chat_type == "ChatType.PRIVATE" and role == "FREE":
             return await message.reply_text(
-                "Premium Users Required ⚠️\n"
-                "Error : Only Premium Users are Allowed to use bot in Personal.\n\n"
-                "Although You Can Use Bot Free Here : Join Group\n"
-                "━━━━━━━━━━━━━\n"
-                "Buy Premium Plan Using /buy to Continue",
+                "Premium Only in DM.\nJoin group to use for free.",
                 reply_markup=InlineKeyboardMarkup(
                     [[InlineKeyboardButton("Join Group", url="https://t.me/BarryxChat")]]
-                ),
-                disable_web_page_preview=True
+                )
             )
 
         if chat_type in ["ChatType.GROUP", "ChatType.SUPERGROUP"] and str(chat_id) not in GROUP:
-            return await message.reply_text("Unauthorized chat. Contact admin.", message.id)
+            return await message.reply_text("Unauthorized group.", message.id)
 
         if credit < 1:
-            return await message.reply_text("❌ Insufficient credit.", message.id)
+            return await message.reply_text("❌ Insufficient credit.")
 
         cooldown = 25 if role == "FREE" else 10
         if now - antispam_time < cooldown:
             wait = cooldown - (now - antispam_time)
-            return await message.reply_text(f"⏳ AntiSpam: wait {wait}s", message.id)
+            return await message.reply_text(f"⏳ AntiSpam: wait {wait}s")
 
-        raw = (message.reply_to_message.text if message.reply_to_message else message.text.replace("/mass", "")).strip().split("\n")
+        # Extract cards from reply or main message (smart logic)
+        cc_input = ""
+        if message.reply_to_message and message.reply_to_message.text:
+            cc_input = message.reply_to_message.text
+        else:
+            cc_input = message.text.replace("/mass", "").replace(".mass", "")
+
+        found = re.findall(r'\d{12,16}\D\d{1,2}\D\d{2,4}\D\d{3,4}', cc_input)
         cards = []
-        for x in raw:
-            nums = re.findall(r"\d+", x)
-            if len(nums) >= 4:
-                cards.append([nums[0], nums[1], nums[2], nums[3]])
+        for line in found:
+            clean = re.sub(r"[^\d]", "|", line)
+            parts = clean.split("|")
+            if len(parts) >= 4:
+                cards.append(parts[:4])
 
         if not cards:
-            return await message.reply_text("❌ No valid cards provided.", message.id)
+            return await message.reply_text("❌ No valid cards found.")
         if role == "FREE" and len(cards) > 5:
             return await message.reply_text("❌ Free users can only check 5 cards.")
         if role == "PREMIUM" and len(cards) > 15:
             return await message.reply_text("❌ Premium users can only check 15 cards.")
 
         start_time = time.time()
-        stmsg = await message.reply_text("Please wait...⌛", reply_to_message_id=message.id)
+        reply_msg = await message.reply_text("Checking cards...⌛", reply_to_message_id=msg_id)
 
-        text = "<b>⚡ BARRY | MASS STRIPE AUTH</b>\n━━━━━━━━━━━━━\n"
+        proxy = "proxy.rampageproxies.com:5000:package-1111111-country-us:5671nuWwEPrHCw2t"
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [executor.submit(auth_func, None, c[0], c[3], c[1], c[2]) for c in cards]
-            for i, f in enumerate(futures):
-                res = f.result()
-                cc = f"{cards[i][0]}|{cards[i][1]}|{cards[i][2]}|{cards[i][3]}"
-                status = res.get("status", "❓")
-                msg = res.get("response", "No response")
-                text += f"<b>⊙ Card:</b> <code>{cc}</code>\n<b>⊙ Status:</b> {status}\n<b>⊙ Result:</b> {msg}\n━━━━━━━━━━━━━\n"
+        tasks = []
+        for c in cards:
+            fullcc = f"{c[0]}|{c[1]}|{c[2]}|{c[3]}"
+            tasks.append(async_auth_func(fullcc, proxy))
+
+        results = await asyncio.gather(*tasks)
+
+        text = "<b> BARRY | MASS STRIPE AUTH</b>\n━━━━━━━━━━━━━\n"
+        approved = declined = error = 0
+
+        for i, res in enumerate(results):
+            cc = f"{cards[i][0]}|{cards[i][1]}|{cards[i][2]}|{cards[i][3]}"
+            status = res.get("status", "error").lower()
+            msg = res.get("response", "No response")
+
+            if status == "approved":
+                approved += 1
+                result_line = "Approved ✅"
+            elif status == "declined":
+                declined += 1
+                result_line = msg
+            else:
+                error += 1
+                result_line = msg
+
+            text += f"<b>⊙ Card:</b> <code>{cc}</code>\n<b>⊙ Status:</b> {status}\n<b>⊙ Result:</b> {result_line}\n━━━━━━━━━━━━━\n"
 
         total_time = round(time.time() - start_time, 2)
         mention = user_name
         dev = '<a href="tg://user?id=6440962840">𝑩𝑨𝑹𝑹𝒀</a>'
+
+        text += f"<b>[✓] Approved:</b> {approved}  |  <b>[✘] Declined:</b> {declined}  |  <b>[!] Error:</b> {error}\n"
         text += f"<b>[ϟ] Time:</b> {total_time}s\n<b>[ϟ] Checked By:</b> {mention} [ {role} ]\n<b>[⌥] Dev:</b> {dev}"
 
-        await Client.edit_message_text(chat_id, stmsg.id, text)
+        await Client.edit_message_text(chat_id=chat_id, message_id=reply_msg.id, text=text, disable_web_page_preview=True)
         updatedata(user_id, "credits", credit - len(cards))
         updatedata(user_id, "antispam_time", now)
 
