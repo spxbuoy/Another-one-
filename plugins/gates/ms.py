@@ -90,17 +90,18 @@ async def cmd_ms(Client, message):
             elif "request failed" in msg_lower or "error" in msg_lower:
                 status = "Error"
                 err += 1
-            elif "approved" in status.lower():
+            elif any(x in msg_lower for x in ["incorrect_zip", "incorrect_cvc", "cvc mismatch", "insufficient"]):
                 if "incorrect_zip" in msg_lower:
-                    status = "Approved ✅ (ZIP)"
-                elif "incorrect_cvc" in msg_lower or "cvc mismatch" in msg_lower:
-                    status = "Approved ✅ (CVC)"
-                elif "insufficient" in msg_lower:
-                    status = "Approved ✅ (INSUFF)"
-                else:
                     status = "Approved ✅"
-                    await send_hit_if_approved(Client, f"<b>Live Hit (MS)</b>\n<code>{cc}</code>\n<b>Response:</b> {msg}")
+                elif "incorrect_cvc" in msg_lower or "cvc mismatch" in msg_lower:
+                    status = "Approved ✅"
+                elif "insufficient" in msg_lower:
+                    status = "Approved ✅"
                 live += 1
+            elif "approved" in status.lower():
+                status = "Approved ✅"
+                live += 1
+                await send_hit_if_approved(Client, f"<b>Live Hit (MS)</b>\n<code>{cc}</code>\n<b>Response:</b> {msg}")
             else:
                 status = "Declined ❌"
                 dec += 1
