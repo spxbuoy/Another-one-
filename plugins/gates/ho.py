@@ -96,27 +96,32 @@ async def cmd_ho(client, message):
 
         toc = time.perf_counter()
 
+        headers = {
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "application/json"
+        }
+        proxies = {
+            "http": "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000",
+            "https": "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
+        }
+
         try:
-            headers = {
-                "User-Agent": "Mozilla/5.0",
-                "Accept": "application/json"
-            }
-            proxies = {
-                "http": "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000",
-                "https": "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
-            }
-            res = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", headers=headers, proxies=proxies, timeout=15)
+            res = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", headers=headers, proxies=proxies, timeout=10)
             binres = res.json()
-            brand = str(binres.get("brand") or binres.get("scheme") or "N/A").upper()
-            type_ = str(binres.get("type", "N/A")).upper()
-            level = str(binres.get("level", "N/A")).upper()
-            bank = str(binres.get("bank", "N/A")).upper()
-            country = str(binres.get("country_name", "N/A")).upper()
-            flag = binres.get("country_flag") or "🏳️"
         except Exception as e:
-            print("[DEBUG] BIN Proxy Error:", str(e))
-            brand = type_ = level = bank = country = "N/A"
-            flag = "🏳️"
+            print("[BIN Proxy Failed] Retrying without proxy:", str(e))
+            try:
+                res = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", headers=headers, timeout=10)
+                binres = res.json()
+            except:
+                binres = {}
+
+        brand = str(binres.get("brand") or binres.get("scheme") or "N/A").upper()
+        type_ = str(binres.get("type", "N/A")).upper()
+        level = str(binres.get("level", "N/A")).upper()
+        bank = str(binres.get("bank", "N/A")).upper()
+        country = str(binres.get("country_name", "N/A")).upper()
+        flag = binres.get("country_flag") or "🏳️"
 
         status = "Approved ✅" if card_status == "approved" else "Declined ❌"
 
