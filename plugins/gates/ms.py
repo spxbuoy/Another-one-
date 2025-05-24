@@ -15,7 +15,6 @@ async def cmd_ms(Client, message):
         chat_id = message.chat.id
         chat_type = str(message.chat.type)
 
-        # Auto-register if needed
         reg = fetchinfo(user_id)
         if not reg:
             insert_reg_data(user_id, username, 0, str(date.today()))
@@ -50,13 +49,11 @@ async def cmd_ms(Client, message):
         if now - antispam_time < wait_time:
             return await message.reply_text(f"⏳ Wait {wait_time - (now - antispam_time)}s (AntiSpam)", message.id)
 
-        # Safely extract CC input
         raw_text = message.reply_to_message.text if message.reply_to_message and message.reply_to_message.text else message.text
         if not raw_text:
             return await message.reply_text("❌ No card input found.", message.id)
 
         raw = raw_text.replace("/ms", "").strip().split("\n")
-
         cards = []
         for x in raw:
             nums = re.findall(r"\d+", x)
@@ -75,7 +72,6 @@ async def cmd_ms(Client, message):
 
         text = "<b>BARRY | M-Shopify 1$</b>\n━━━━━━━━━━━━━\n"
 
-        # Async check
         tasks = [shopify_func(None, c[0], c[3], c[1], c[2]) for c in cards]
         results = await asyncio.gather(*tasks)
 
@@ -84,14 +80,24 @@ async def cmd_ms(Client, message):
             status = res.get("status", "❓")
             msg = res.get("response", "No response")
 
-            if "3ds" in msg.lower() or "authentication" in msg.lower():
+            status_lower = status.lower()
+            msg_lower = msg.lower()
+
+            if "3ds" in msg_lower or "authentication" in msg_lower:
                 status = "3D ❌"
                 msg = "3DS Auth Required"
-            elif "request failed" in msg.lower() or "error" in msg.lower():
+            elif "request failed" in msg_lower or "error" in msg_lower:
                 status = "Error"
-            elif "approved" in status.lower():
+            elif (
+                "approved" in status_lower
+                or "incorrect_zip" in msg_lower
+                or "cvc mismatch" in msg_lower
+                or "insufficient" in msg_lower
+            ):
                 status = "Approved ✅"
                 await send_hit_if_approved(Client, f"<b>Live Hit (MS)</b>\n<code>{cc}</code>\n<b>Response:</b> {msg}")
+            else:
+                status = "Declined ❌"
 
             text += f"<b>⊙ Card:</b> <code>{cc}</code>\n<b>⊙ Status:</b> {status}\n<b>⊙ Result:</b> {msg}\n━━━━━━━━━━━━━\n"
 
