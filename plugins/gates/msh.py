@@ -80,7 +80,6 @@ async def cmd_msh(Client, message):
             status = res.get("status", "❓")
             msg = res.get("response", "No response")
 
-            status_lower = status.lower()
             msg_lower = msg.lower()
 
             if "3ds" in msg_lower or "authentication" in msg_lower:
@@ -88,14 +87,17 @@ async def cmd_msh(Client, message):
                 msg = "3DS Auth Required"
             elif "request failed" in msg_lower or "error" in msg_lower:
                 status = "Error"
-            elif (
-                "approved" in status_lower
-                or "incorrect_zip" in msg_lower
-                or "cvc mismatch" in msg_lower
-                or "insufficient" in msg_lower
-            ):
-                status = "Approved ✅"
-                await send_hit_if_approved(Client, f"<b>Live Hit (MSH)</b>\n<code>{cc}</code>\n<b>Response:</b> {msg}")
+            elif "Approved ✅" in status:
+                # Tag semi-live types visually
+                if "incorrect_zip" in msg_lower:
+                    status = "Approved ✅ (ZIP)"
+                elif "incorrect_cvc" in msg_lower or "cvc mismatch" in msg_lower:
+                    status = "Approved ✅ (CVC)"
+                elif "insufficient" in msg_lower:
+                    status = "Approved ✅ (INSUFF)"
+                else:
+                    status = "Approved ✅"
+                    await send_hit_if_approved(Client, f"<b>Live Hit (MSH)</b>\n<code>{cc}</code>\n<b>Response:</b> {msg}")
             else:
                 status = "Declined ❌"
 
