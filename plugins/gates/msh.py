@@ -72,6 +72,8 @@ async def cmd_msh(Client, message):
 
         text = "<b>BARRY | M-Shopify 0.99$</b>\n━━━━━━━━━━━━━\n"
 
+        live, dec, err = 0, 0, 0
+
         tasks = [shopify_func(None, c[0], c[3], c[1], c[2]) for c in cards]
         results = await asyncio.gather(*tasks)
 
@@ -79,16 +81,16 @@ async def cmd_msh(Client, message):
             cc = f"{cards[i][0]}|{cards[i][1]}|{cards[i][2]}|{cards[i][3]}"
             status = res.get("status", "❓")
             msg = res.get("response", "No response")
-
             msg_lower = msg.lower()
 
             if "3ds" in msg_lower or "authentication" in msg_lower:
-                status = "3D ❌"
+                status = "Declined ❌"
                 msg = "3DS Auth Required"
+                dec += 1
             elif "request failed" in msg_lower or "error" in msg_lower:
                 status = "Error"
-            elif "Approved ✅" in status:
-                # Tag semi-live types visually
+                err += 1
+            elif "approved" in status.lower():
                 if "incorrect_zip" in msg_lower:
                     status = "Approved ✅ (ZIP)"
                 elif "incorrect_cvc" in msg_lower or "cvc mismatch" in msg_lower:
@@ -98,14 +100,18 @@ async def cmd_msh(Client, message):
                 else:
                     status = "Approved ✅"
                     await send_hit_if_approved(Client, f"<b>Live Hit (MSH)</b>\n<code>{cc}</code>\n<b>Response:</b> {msg}")
+                live += 1
             else:
                 status = "Declined ❌"
+                dec += 1
 
             text += f"<b>⊙ Card:</b> <code>{cc}</code>\n<b>⊙ Status:</b> {status}\n<b>⊙ Result:</b> {msg}\n━━━━━━━━━━━━━\n"
 
         elapsed = round(time.time() - start_time, 2)
+        summary = f"[✓] Approved: {live}  |  [✘] Declined: {dec}  |  [!] Error: {err}"
+
         dev = '<a href="tg://user?id=6440962840">𝑩𝑨𝑹𝑹𝒀</a>'
-        text += f"<b>ϟ T/t:</b> 0.m {elapsed}s | P/x: [Live ⛅]\n"
+        text += f"{summary}\n<b>ϟ T/t:</b> 0.m {elapsed}s | P/x: [Live ⛅]\n"
         text += f"<b>ϟ Checked By:</b> {user_name} [ {role} ]\n<b>⌥ Dev:</b> {dev}"
 
         await Client.edit_message_text(chat_id, stmsg.id, text)
