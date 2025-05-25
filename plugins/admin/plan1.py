@@ -30,7 +30,7 @@ async def manual_subs_cmd(client: Client, message: Message):
 
         # Upgrade logic
         updatedata(userid, "plan", "STARTER")
-        updatedata(userid, "credits", int(user_data[5]) + 1000)
+        updatedata(userid, "credits", int(user_data[5]) + 2000)
         updatedata(userid, "expiry", str(date.today() + timedelta(days=7)))
         updatedata(userid, "status", "PREMIUM")
         updatedata(userid, "totalkey", 0)
@@ -39,8 +39,8 @@ async def manual_subs_cmd(client: Client, message: Message):
         plan_ui = (
             "╭━━━〔 𝙋𝙇𝘼𝙉 𝙐𝙋𝙂𝙍𝘼𝘿𝙀 〕━━━╮\n"
             f"┣➤ 👤 User       : <a href='tg://user?id={userid}'>{userid}</a>\n"
-            f"┣➤ 🧾 Plan       : <b>Starter Plan 0.99$</b>\n"
-            f"┣➤ 💳 Price      : <b>0.99$</b>\n"
+            f"┣➤ 🧾 Plan       : <b>Starter Plan 3$</b>\n"
+            f"┣➤ 💳 Price      : <b>3$</b>\n"
             f"┣➤ ⭐ Status     : <b>PREMIUM ✅</b>\n"
             f"┣➤ 🏦 Method     : <b>{payment_method}</b>\n"
             f"┣➤ 📅 Upgraded   : <b>{str(date.today())}</b>\n"
@@ -60,7 +60,7 @@ async def manual_subs_cmd(client: Client, message: Message):
             "━━━━━━━━━━━━━\n"
             f"Account Holder : {user_name}\n"
             f"Account ID     : {userid}\n"
-            f"Plan           : Starter Plan 0.99$\n"
+            f"Plan           : Starter Plan 3$\n"
             f"Transaction ID : {txid}\n"
             f"Status         : ✅ Settled\n"
             f"Received Via   : {payment_method}\n"
