@@ -30,7 +30,7 @@ async def cmd_plan2(client: Client, message: Message):
 
         # Update user data for Silver plan
         updatedata(userid, "plan", "SILVER")
-        updatedata(userid, "credits", int(user_data[5]) + 2000)
+        updatedata(userid, "credits", int(user_data[5]) + 6000)
         expiry_date = str(date.today() + timedelta(days=15))
         updatedata(userid, "expiry", expiry_date)
         updatedata(userid, "status", "PREMIUM")
@@ -40,8 +40,8 @@ async def cmd_plan2(client: Client, message: Message):
         plan_ui = (
             "╭━━━〔 𝙋𝙇𝘼𝙉 𝙐𝙋𝙂𝙍𝘼𝘿𝙀 〕━━━╮\n"
             f"┣➤ 👤 User       : <a href='tg://user?id={userid}'>{userid}</a>\n"
-            f"┣➤ 🧾 Plan       : <b>Silver Plan 1.99$</b>\n"
-            f"┣➤ 💳 Price      : <b>1.99$</b>\n"
+            f"┣➤ 🧾 Plan       : <b>Silver Plan 6.5$</b>\n"
+            f"┣➤ 💳 Price      : <b>6.5$</b>\n"
             f"┣➤ ⭐ Status     : <b>PREMIUM ✅</b>\n"
             f"┣➤ 🏦 Method     : <b>{payment_method}</b>\n"
             f"┣➤ 📅 Upgraded   : <b>{str(date.today())}</b>\n"
@@ -60,7 +60,7 @@ async def cmd_plan2(client: Client, message: Message):
             "━━━━━━━━━━━━━\n"
             f"Account Holder : {user_name}\n"
             f"Account ID     : {userid}\n"
-            f"Plan           : Silver Plan 1.99$\n"
+            f"Plan           : Silver Plan 6.5$\n"
             f"Transaction ID : {txid}\n"
             f"Status         : ✅ Settled\n"
             f"Received Via   : {payment_method}\n"
