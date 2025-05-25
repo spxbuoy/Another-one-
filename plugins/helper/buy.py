@@ -25,7 +25,7 @@ async def cmd_buy(client, message):
             "[ϟ] Payment Methods:\n"
             "➤ BTC, LTC, USDT\n"
             "━━━━━━━━━━━━━━\n"
-            "All plans are valid for 1 month.\n"
+            "All plans are valid & Suitable.\n"
             "You must repurchase to continue using premium after expiry."
         )
 
