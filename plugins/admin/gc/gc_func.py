@@ -38,9 +38,9 @@ def insert_giftcode(gc: str, plan_type: str, credits: int, days: int):
 
 # Helpers for other plans (if used elsewhere)
 def insert_pm(gc): insert_giftcode(gc, "PREMIUM", 1000, 30)
-def insert_plan1(gc): insert_giftcode(gc, "Starter", 1000, 7)
-def insert_plan2(gc): insert_giftcode(gc, "Silver", 1500, 15)
-def insert_plan3(gc): insert_giftcode(gc, "Gold", 3000, 30)
+def insert_plan1(gc): insert_giftcode(gc, "Starter", 2000, 7)
+def insert_plan2(gc): insert_giftcode(gc, "Silver", 6000, 15)
+def insert_plan3(gc): insert_giftcode(gc, "Gold", 12000, 30)
 
 # Lookups
 def getgc(gc: str):
