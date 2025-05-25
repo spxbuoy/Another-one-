@@ -30,7 +30,7 @@ async def cmd_subg(client: Client, message: Message):
 
         # Update user
         updatedata(userid, "plan", "GOLD")
-        updatedata(userid, "credits", int(user_data[5]) + 5000)
+        updatedata(userid, "credits", int(user_data[5]) + 12000)
         expiry = str(date.today() + timedelta(days=30))
         updatedata(userid, "expiry", expiry)
         updatedata(userid, "status", "PREMIUM")
@@ -42,8 +42,8 @@ async def cmd_subg(client: Client, message: Message):
         plan_ui = (
             "╭━━━〔 𝙋𝙇𝘼𝙉 𝙐𝙋𝙂𝙍𝘼𝘿𝙀 〕━━━╮\n"
             f"┣➤ 👤 User       : <a href='tg://user?id={userid}'>{userid}</a>\n"
-            f"┣➤ 🧾 Plan       : <b>Gold Plan 4.99$</b>\n"
-            f"┣➤ 💳 Price      : <b>4.99$</b>\n"
+            f"┣➤ 🧾 Plan       : <b>Gold Plan 12$</b>\n"
+            f"┣➤ 💳 Price      : <b>12$</b>\n"
             f"┣➤ ⭐ Status     : <b>PREMIUM ✅</b>\n"
             f"┣➤ 🏦 Method     : <b>{payment_method}</b>\n"
             f"┣➤ 📅 Upgraded   : <b>{today}</b>\n"
@@ -61,7 +61,7 @@ async def cmd_subg(client: Client, message: Message):
             "━━━━━━━━━━━━━\n"
             f"Account Holder : {user_name}\n"
             f"Account ID     : {userid}\n"
-            f"Plan           : Gold Plan 4.99$\n"
+            f"Plan           : Gold Plan 12$\n"
             f"Transaction ID : {txid}\n"
             f"Status         : ✅ Settled\n"
             f"Received Via   : {payment_method}\n"
