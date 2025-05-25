@@ -2,7 +2,7 @@ from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from plugins.func.users_sql import plan_expirychk
 
-@Client.on_message(filters.command("buy"))
+@Client.on_message(filters.command("buy", prefixes=["/", "."]))
 async def cmd_buy(client, message):
     try:
         user_id = str(message.from_user.id)
@@ -11,16 +11,16 @@ async def cmd_buy(client, message):
             "BARRY [PREMIUM PLANS]\n"
             "━━━━━━━━━━━━━━\n"
             "[ϟ] Starter\n"
-            "➤ 1K Credits + 7 Days Premium\n"
-            "➤ Price: 0.99$\n"
+            "➤ 2K Credits + 7 Days Premium\n"
+            "➤ Price: 3$\n"
             "━━━━━━━━━━━━━━\n"
             "[ϟ] Silver\n"
-            "➤ 2K Credits + 15 Days Premium\n"
-            "➤ Price: 1.99$\n"
+            "➤ 6K Credits + 15 Days Premium\n"
+            "➤ Price: 6.5$\n"
             "━━━━━━━━━━━━━━\n"
             "[ϟ] Gold\n"
-            "➤ 5K Credits + 1 Month Premium\n"
-            "➤ Price: 4.99$\n"
+            "➤ Unlimited Credits + 1 Month Premium\n"
+            "➤ Price: 12$\n"
             "━━━━━━━━━━━━━━\n"
             "[ϟ] Payment Methods:\n"
             "➤ BTC, LTC, USDT\n"
