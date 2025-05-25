@@ -15,7 +15,7 @@ async def cmd_gc(client: Client, message: Message):
         args = message.text.split()
         count = int(args[1]) if len(args) > 1 else 10
         days = int(args[2]) if len(args) > 2 else 30
-        credits = int(args[3]) if len(args) > 3 else 2000
+        credits = int(args[3]) if len(args) > 3 else 1000
 
         count = max(1, min(count, 100))
         days = max(1, min(days, 3650))
