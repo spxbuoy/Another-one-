@@ -13,9 +13,9 @@ async def generate_gc(client: Client, message: Message):
         plan = args[2]
 
         plan_data = {
-            "Starter": (500, 7),
-            "Silver": (5000, 15),
-            "Gold": (20000, 30)
+            "Starter": (2000, 7),
+            "Silver": (6000, 15),
+            "Gold": (12000, 30)
         }
 
         if plan not in plan_data:
