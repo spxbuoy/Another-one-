@@ -37,7 +37,7 @@ async def gates_menu(client, callback_query: CallbackQuery):
         "━━━━━━━━━━━━━\n"
         "[ϟ] Auth Gates (2)\n"
         "[ϟ] Mass Checker (4)\n"
-        "[ϟ] Shopify Gates (4)\n"
+        "[ϟ] Shopify Gates (5)\n"
         "[ϟ] Charge Gates (2)",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("Auth", callback_data="auth_menu"),
@@ -57,7 +57,7 @@ async def auth_menu(client, callback_query: CallbackQuery):
         "━━━━━━━━━━━━━\n"
         "[ϟ] Name: Braintree Auth\n"
         "[ϟ] Command: /b3 cc|mes|ano|cvv\n"
-        "[ϟ] Status: Active ✅\n"
+        "[ϟ] Status: Off ❌\n"
         "━━━━━━━━━━━━━\n"
         "[ϟ] Name: Stripe Auth\n"
         "[ϟ] Command: /cc cc|mes|ano|cvv\n"
@@ -80,7 +80,7 @@ async def mass_check_gate(client, callback_query: CallbackQuery):
         "━━━━━━━━━━━━━\n"
         "[ϟ] Name: M Stripe Auth Mass\n"
         "[ϟ] Command: /mass cc|mes|ano|cvv\n"
-        "[ϟ] Status: Active ✅\n"
+        "[ϟ] Status: Off ❌\n"
         "━━━━━━━━━━━━━\n"
         "[ϟ] Name: M Stripe 1$ Charge\n"
         "[ϟ] Command: /mchk cc|mes|ano|cvv\n"
@@ -94,7 +94,7 @@ async def mass_check_gate(client, callback_query: CallbackQuery):
         "[ϟ] Command: /ms cc|mes|ano|cvv\n"
         "[ϟ] Status: Active ✅\n"
         "━━━━━━━━━━━━━\n"
-        "[ϟ] Name: Mass Txt Shopify 1.99$\n"
+        "[ϟ] Name: Mass Txt Shopify 1$\n"
         "[ϟ] Command: /mtxt (reply to .txt)\n"
         "[ϟ] Status: Active ✅\n",
         reply_markup=InlineKeyboardMarkup([
@@ -107,7 +107,7 @@ async def mass_check_gate(client, callback_query: CallbackQuery):
 @Client.on_callback_query(filters.regex("shopify_menu"))
 async def shopify_menu(client, callback_query: CallbackQuery):
     await callback_query.message.edit_text(
-        "BARRY [SHOPIFY GATES]\n"
+        "BARRY [SHOPIFY GATES] (Page 1/2)\n"
         "━━━━━━━━━━━━━\n"
         "[ϟ] Name: Shopify 0.99$\n"
         "[ϟ] Command: /sh cc|mes|ano|cvv\n"
@@ -125,10 +125,26 @@ async def shopify_menu(client, callback_query: CallbackQuery):
         "[ϟ] Command: /sf cc|mes|ano|cvv\n"
         "[ϟ] Status: Active ✅\n",
         reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("➡️ Next", callback_data="shopify_page2")],
             [InlineKeyboardButton("Back", callback_data="open_gates"),
              InlineKeyboardButton("Close", callback_data="close_ui")]
         ])
     )
+   
+@Client.on_callback_query(filters.regex("shopify_page2"))
+async def shopify_menu_page2(client, callback_query: CallbackQuery):
+    await callback_query.message.edit_text(
+        "BARRY [SHOPIFY GATES] (Page 2/2)\n"
+        "━━━━━━━━━━━━━\n"
+        "[ϟ] Name: How to Add Auto Gate\n"
+        "[ϟ] Command: /autoguide\n"
+        "[ϟ] Status: Active ✅\n",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("⬅️ Back", callback_data="shopify_menu"),
+             InlineKeyboardButton("Close", callback_data="close_ui")]
+        ])
+    )
+
 
 # Charge Menu
 @Client.on_callback_query(filters.regex("charge_menu"))
