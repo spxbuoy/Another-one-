@@ -19,7 +19,6 @@ async def handle_dynamic_commands(client, message):
     if not gate:
         return
 
-  
     regdata = fetchinfo(user_id)
     if not regdata:
         return await message.reply("❌ You are not registered. Use /register")
@@ -59,7 +58,7 @@ async def handle_dynamic_commands(client, message):
 <code>┗━━━━━━━━━━━⊛</code>
 <b>⊙ CC:</b> <code>{cc}</code>
 <b>⊙ Status:</b> Checking...
-<b>⊙ Response:</b> Waiting...""", )
+<b>⊙ Response:</b> Waiting...""")
 
     start = time.perf_counter()
     success, result_msg, raw_data = check_and_add_site(cc, site_url, email=None, shipping=shipping == "True")
@@ -69,7 +68,6 @@ async def handle_dynamic_commands(client, message):
     updatedata(user_id, "antispam_time", now)
     plan_expirychk(user_id)
 
-    
     bin_code = cc.split("|")[0][:6]
     try:
         r = requests.get(f"https://api.voidex.dev/api/bin?bin={bin_code}", timeout=10)
@@ -110,7 +108,13 @@ async def handle_dynamic_commands(client, message):
 <b>⊙ Time:</b> {duration:.2f}s
 <b>❛ ━━━━・⌁ 𝑩𝑨𝑹𝑹𝒀 ⌁・━━━━ ❜</b>"""
 
-    await checking_msg.edit(final_msg,)
+    # Safe edit: prevents 400 error
+    try:
+        if checking_msg.text != final_msg:
+            await checking_msg.edit(final_msg)
+    except Exception as e:
+        if "MESSAGE_NOT_MODIFIED" not in str(e):
+            await message.reply(f"❌ Edit error: {e}")
 
     if "charged" in msg or "processedreceipt" in msg:
         await send_hit_if_approved(client, final_msg)
