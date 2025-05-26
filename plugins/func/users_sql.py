@@ -1,6 +1,6 @@
 import sqlite3
 import os
-from datetime import date
+from datetime import date, datetime
 
 # === Paths ===
 DB_FOLDER = "plugins/xcc_db"
@@ -14,6 +14,8 @@ os.makedirs(DB_FOLDER, exist_ok=True)
 def init_databases():
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
+
+        # Main user table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 user_id TEXT PRIMARY KEY,
@@ -29,6 +31,8 @@ def init_databases():
                 totalkey INTEGER
             )
         """)
+
+        # Single gate per user (legacy)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS user_gates (
                 user_id TEXT PRIMARY KEY,
@@ -36,6 +40,32 @@ def init_databases():
                 proxy TEXT
             )
         """)
+
+        # Shopify gate logs
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS shopify_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT,
+                username TEXT,
+                site_url TEXT,
+                result TEXT,
+                status TEXT,
+                timestamp TEXT
+            )
+        """)
+
+        # Custom gates without button
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_custom_gates (
+                user_id TEXT,
+                command TEXT,
+                site_url TEXT,
+                gate_name TEXT,
+                shipping TEXT,
+                timestamp TEXT
+            )
+        """)
+
         conn.commit()
 
     with sqlite3.connect(CUSTOMER_DB) as conn:
@@ -51,7 +81,7 @@ def init_databases():
         """)
         conn.commit()
 
-# === Register a new user ===
+# === User registration ===
 def insert_reg_data(user_id, username, credits=200, reg_date=str(date.today())):
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
@@ -70,7 +100,7 @@ def fetchinfo(user_id):
         cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
         return cursor.fetchone()
 
-# === Update any user field ===
+# === Update user field ===
 def updatedata(user_id, field, value):
     allowed = {
         "username", "status", "plan", "expiry", "credits", "wait_time",
@@ -83,7 +113,7 @@ def updatedata(user_id, field, value):
         cursor.execute(f"UPDATE users SET {field} = ? WHERE user_id = ?", (value, user_id))
         conn.commit()
 
-# === Check plan expiry and sync with customer DB ===
+# === Check & sync premium status ===
 def plan_expirychk(user_id=None):
     with sqlite3.connect(DB_PATH) as user_conn, sqlite3.connect(CUSTOMER_DB) as cust_conn:
         u_cursor = user_conn.cursor()
@@ -112,7 +142,7 @@ def plan_expirychk(user_id=None):
         user_conn.commit()
         cust_conn.commit()
 
-# === Gate Functions ===
+# === Legacy gate ===
 def set_user_gate(user_id, site_url, proxy):
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
@@ -133,14 +163,13 @@ def remove_user_gate(user_id):
         cursor.execute("DELETE FROM user_gates WHERE user_id = ?", (user_id,))
         conn.commit()
 
-# === Get all user data ===
+# === Gate stats and cleanup ===
 def getalldata():
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM users")
         return cursor.fetchall()
 
-# === Get stats: total users & premium ===
 def get_user_stats():
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
@@ -154,7 +183,7 @@ def get_user_stats():
 
     return total_users, premium_users
 
-# === Set anti-spam time ===
+# === Anti-spam time ===
 def setantispamtime(user_id):
     import time
     now = int(time.time())
@@ -163,7 +192,7 @@ def setantispamtime(user_id):
         cursor.execute("UPDATE users SET antispam_time = ? WHERE user_id = ?", (now, user_id))
         conn.commit()
 
-# === Deduct credits ===
+# === Credit handling ===
 def massdeductcredit(user_id, amount):
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
@@ -176,5 +205,81 @@ def delete_user(user_id):
         cursor.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
         conn.commit()
 
-# === Init on import ===
+# === Premium user fetch ===
+def get_premium_users_count_and_list():
+    with sqlite3.connect(CUSTOMER_DB) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id, username FROM premium_users")
+        return cursor.fetchall()
+
+def get_premium_users_from_users_table():
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id, username FROM users WHERE status = 'premium'")
+        return cursor.fetchall()
+
+# === Shopify Logs ===
+def log_shopify_result(user_id, username, site_url, result, status):
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO shopify_logs (user_id, username, site_url, result, status, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (user_id, username, site_url, result, status, str(datetime.now())))
+        conn.commit()
+
+def fetch_shopify_logs(user_id):
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT site_url, status, timestamp
+            FROM shopify_logs
+            WHERE user_id = ?
+            ORDER BY id DESC
+            LIMIT 20
+        """, (user_id,))
+        return cursor.fetchall()
+
+def get_latest_successful_site(user_id):
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT site_url, timestamp
+            FROM shopify_logs
+            WHERE user_id = ? AND status = 'Success'
+            ORDER BY id DESC LIMIT 1
+        """, (user_id,))
+        return cursor.fetchone()
+
+# === Custom Gates (no button) ===
+def save_custom_gate(user_id, command, site_url, gate_name, shipping):
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO user_custom_gates (
+                user_id, command, site_url, gate_name, shipping, timestamp
+            ) VALUES (?, ?, ?, ?, ?, ?)
+        """, (user_id, command, site_url, gate_name, shipping, str(datetime.now())))
+        conn.commit()
+
+def get_all_custom_gates(user_id):
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT command, site_url, gate_name, shipping
+            FROM user_custom_gates
+            WHERE user_id = ?
+        """, (user_id,))
+        return cursor.fetchall()
+
+def delete_custom_gate(user_id, command):
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            DELETE FROM user_custom_gates
+            WHERE user_id = ? AND command = ?
+        """, (user_id, command))
+        conn.commit()
+
+# === Initialize on import ===
 init_databases()
