@@ -2,7 +2,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 from plugins.func.users_sql import fetchinfo
 
-@Client.on_message(filters.command("credits"))
+@Client.on_message(filters.command("credits", prefixes=["/", "."]))
 async def check_credits(client: Client, message: Message):
     user_id = str(message.from_user.id)
     user = fetchinfo(user_id)
