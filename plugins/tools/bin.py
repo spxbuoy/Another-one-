@@ -2,7 +2,7 @@ from pyrogram import Client, filters
 import requests
 from plugins.func.users_sql import fetchinfo, plan_expirychk
 
-@Client.on_message(filters.command("bin"))
+@@Client.on_message(filters.command("bin", prefixes=["/", "."]))
 async def cmd_bin(client, message):
     user_id = str(message.from_user.id)
     user_info = fetchinfo(user_id)
