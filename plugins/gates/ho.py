@@ -76,7 +76,7 @@ f"""<code>┏━━━━━━━⍟</code>
                     "key": "VDX-SHA2X-NZ0RS-O7HAM",
                     "data": {
                         "card": fullcc,
-                        "product_url": "https://musicworksunlimited.com/products/cuddle-up-cuddle-cub-music-single",
+                        "product_url": "https://cowdengarden.com/products/donation",
                         "email": None,
                         "proxy": "207.244.217.165:6712:pyrcqush:elcth08m9maj",
                         "ship_address": None,
