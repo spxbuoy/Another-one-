@@ -24,9 +24,6 @@ async def cmd_cc(Client, message):
 
         role = (regdata[2] or "FREE").strip().upper()
         credit = int(regdata[5] or 0)
-        wait_time = int(regdata[6] or (15 if role == "FREE" else 5))
-        antispam_time = int(regdata[7] or 0)
-        now = int(time.time())
 
         if chat_type == ChatType.PRIVATE and role == "FREE":
             return await message.reply_text(
@@ -43,8 +40,6 @@ async def cmd_cc(Client, message):
 
         if credit < 1:
             return await message.reply_text("❌ Insufficient credit.")
-        if now - antispam_time < wait_time:
-            return await message.reply_text(f"⏳ Wait {wait_time - (now - antispam_time)}s (AntiSpam)")
 
         cc_text = message.reply_to_message.text if message.reply_to_message else (
             message.text.split(maxsplit=1)[1] if len(message.text.split()) > 1 else None
@@ -110,7 +105,7 @@ async def cmd_cc(Client, message):
         elif any(k in msg_lower for k in ["declined", "pickup", "fraud", "stolen", "lost", "do not honor"]):
             status = "Declined ❌"
         else:
-            status = "Error ⚠️"
+            status = "Error"
 
         final_msg = f"""
 <code>┏━━━━━━━⍟</code>
@@ -132,7 +127,6 @@ async def cmd_cc(Client, message):
             await send_hit_if_approved(Client, final_msg)
 
         updatedata(user_id, "credits", credit - 1)
-        updatedata(user_id, "antispam_time", now)
         plan_expirychk(user_id)
 
     except Exception as e:
