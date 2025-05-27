@@ -54,7 +54,7 @@ async def cmd_bin(client, message):
 𝗖𝗼𝘂𝗻𝘁𝗿𝘆: {country} - {flag} - {currency}
 
 𝗖𝗵𝗲𝗰𝗸𝗲𝗱 𝗕𝘆  ⏤‌‌{username} [ {role} ]
-𝗕𝗼𝘁 𝗕𝘆 𝑩𝑨𝑹𝑹𝒀
+𝗕𝗼𝘁 𝗕𝘆 𝗕𝗮𝗿𝗿𝘆
 """
 
     await message.reply_text(reply)
