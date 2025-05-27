@@ -10,12 +10,12 @@ CUSTOMER_DB = os.path.join(DB_FOLDER, "customer.db")
 # === Ensure folder exists ===
 os.makedirs(DB_FOLDER, exist_ok=True)
 
-# === Init DBs ===
+# === Init DBs and columns ===
 def init_databases():
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
 
-        # Main user table
+        # Create users table if not exists
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 user_id TEXT PRIMARY KEY,
@@ -32,7 +32,14 @@ def init_databases():
             )
         """)
 
-        # Single gate per user (legacy)
+        # Safely add missing columns
+        existing_columns = [row[1] for row in cursor.execute("PRAGMA table_info(users)")]
+        if 'daily_check_count' not in existing_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN daily_check_count INTEGER DEFAULT 0")
+        if 'last_check_date' not in existing_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN last_check_date TEXT DEFAULT ''")
+
+        # Create other tables
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS user_gates (
                 user_id TEXT PRIMARY KEY,
@@ -41,7 +48,6 @@ def init_databases():
             )
         """)
 
-        # Shopify gate logs
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS shopify_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,7 +60,6 @@ def init_databases():
             )
         """)
 
-        # Custom gates without button
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS user_custom_gates (
                 user_id TEXT,
@@ -88,8 +93,9 @@ def insert_reg_data(user_id, username, credits=200, reg_date=str(date.today())):
         cursor.execute("""
             INSERT OR IGNORE INTO users (
                 user_id, username, status, plan, expiry, credits,
-                wait_time, antispam_time, total_checks, reg_date, totalkey
-            ) VALUES (?, ?, 'FREE', 'None', 'None', ?, 15, 0, 0, ?, 0)
+                wait_time, antispam_time, total_checks, reg_date, totalkey,
+                daily_check_count, last_check_date
+            ) VALUES (?, ?, 'FREE', 'None', 'None', ?, 15, 0, 0, ?, 0, 0, '')
         """, (user_id, username, credits, reg_date))
         conn.commit()
 
@@ -104,7 +110,8 @@ def fetchinfo(user_id):
 def updatedata(user_id, field, value):
     allowed = {
         "username", "status", "plan", "expiry", "credits", "wait_time",
-        "antispam_time", "total_checks", "reg_date", "totalkey"
+        "antispam_time", "total_checks", "reg_date", "totalkey",
+        "daily_check_count", "last_check_date"
     }
     if field not in allowed:
         raise ValueError("Invalid field name")
@@ -142,13 +149,11 @@ def plan_expirychk(user_id=None):
         user_conn.commit()
         cust_conn.commit()
 
-# === Legacy gate ===
+# === Gate settings ===
 def set_user_gate(user_id, site_url, proxy):
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
-        cursor.execute("""
-            REPLACE INTO user_gates (user_id, site_url, proxy) VALUES (?, ?, ?)
-        """, (user_id, site_url, proxy))
+        cursor.execute("REPLACE INTO user_gates (user_id, site_url, proxy) VALUES (?, ?, ?)", (user_id, site_url, proxy))
         conn.commit()
 
 def get_user_gate(user_id):
@@ -163,7 +168,7 @@ def remove_user_gate(user_id):
         cursor.execute("DELETE FROM user_gates WHERE user_id = ?", (user_id,))
         conn.commit()
 
-# === Gate stats and cleanup ===
+# === Stats ===
 def getalldata():
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
@@ -185,14 +190,13 @@ def get_user_stats():
 
 # === Anti-spam time ===
 def setantispamtime(user_id):
-    import time
-    now = int(time.time())
+    now = int(datetime.utcnow().timestamp())
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute("UPDATE users SET antispam_time = ? WHERE user_id = ?", (now, user_id))
         conn.commit()
 
-# === Credit handling ===
+# === Credit ===
 def massdeductcredit(user_id, amount):
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
@@ -205,7 +209,7 @@ def delete_user(user_id):
         cursor.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
         conn.commit()
 
-# === Premium user fetch ===
+# === Premium fetch ===
 def get_premium_users_count_and_list():
     with sqlite3.connect(CUSTOMER_DB) as conn:
         cursor = conn.cursor()
@@ -251,7 +255,7 @@ def get_latest_successful_site(user_id):
         """, (user_id,))
         return cursor.fetchone()
 
-# === Custom Gates (no button) ===
+# === Custom Gates ===
 def save_custom_gate(user_id, command, site_url, gate_name, shipping):
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
