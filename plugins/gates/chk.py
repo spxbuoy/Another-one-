@@ -128,7 +128,12 @@ async def cmd_chk(client, message):
 <b>❛ ━━━━・⌁ 𝑩𝑨𝑹𝑹𝒀 ⌁・━━━━ ❜</b>
 """
 
-        await client.edit_message_text(chat_id, check_msg.id, msg)
+        # Handle Telegram "message not modified" cleanly
+        try:
+            await client.edit_message_text(chat_id, check_msg.id, msg)
+        except Exception as e:
+            if "MESSAGE_NOT_MODIFIED" not in str(e):
+                await message.reply_text(f"❌ Error: {str(e)}")
 
         if "success" in card_status or "live" in card_message.lower():
             await send_hit_if_approved(client, msg)
