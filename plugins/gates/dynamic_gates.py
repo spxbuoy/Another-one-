@@ -9,6 +9,9 @@ from datetime import datetime
 
 @Client.on_message(filters.text & (filters.private | filters.group), group=99)
 async def handle_dynamic_commands(client, message: Message):
+    if not message.from_user:
+        return  # Prevents NoneType error if from_user is missing
+
     user_id = str(message.from_user.id)
     text = message.text.strip()
 
