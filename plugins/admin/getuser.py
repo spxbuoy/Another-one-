@@ -3,16 +3,21 @@ from pyrogram.types import Message
 from plugins.func.users_sql import fetchinfo
 from plugins.func.utils import error_log
 
-OWNER_ID = "6440962840"  
+OWNER_ID = "6440962840"
+
 @Client.on_message(filters.command("get", ["/", "."]))
 async def cmd_get_userinfo(client: Client, message: Message):
     try:
+        # Ensure message has a sender
+        if not message.from_user:
+            return await message.reply_text("❌ Could not identify sender.")
+
         user_id = str(message.from_user.id)
         if user_id != OWNER_ID:
             return await message.reply_text("❌ You are not the bot owner.", quote=True)
 
-      
-        if message.reply_to_message:
+        # Get target user ID
+        if message.reply_to_message and message.reply_to_message.from_user:
             target_user_id = str(message.reply_to_message.from_user.id)
         else:
             args = message.text.split()
@@ -23,12 +28,15 @@ async def cmd_get_userinfo(client: Client, message: Message):
                 )
             input_arg = args[1]
             if input_arg.startswith("@"):
-                user_obj = await client.get_users(input_arg)
-                target_user_id = str(user_obj.id)
+                try:
+                    user_obj = await client.get_users(input_arg)
+                    target_user_id = str(user_obj.id)
+                except Exception as e:
+                    return await message.reply_text(f"❌ Failed to fetch user: {e}", quote=True)
             else:
                 target_user_id = input_arg
 
-        
+        # Fetch user data from database
         data = fetchinfo(target_user_id)
         if not data:
             return await message.reply_text(
@@ -36,10 +44,16 @@ async def cmd_get_userinfo(client: Client, message: Message):
                 quote=True
             )
 
-     
-        _, username, status, plan, expiry, credits, _, _, _, reg_at, totalkey = data
+        # Safely extract needed fields using index
+        username = data[1] if len(data) > 1 else "N/A"
+        status = data[2] if len(data) > 2 else "N/A"
+        plan = data[3] if len(data) > 3 else "N/A"
+        expiry = data[4] if len(data) > 4 else "N/A"
+        credits = data[5] if len(data) > 5 else "0"
+        reg_at = data[9] if len(data) > 9 else "Unknown"
+        totalkey = data[10] if len(data) > 10 else "0"
 
-        
+        # Format reply
         text = (
             f"𝗕𝗔𝗥𝗥𝗬 | {target_user_id} Info\n"
             f"━━━━━━━━━━━━━━\n"
@@ -58,4 +72,6 @@ async def cmd_get_userinfo(client: Client, message: Message):
 
     except Exception as e:
         import traceback
-        await error_log(traceback.format_exc())
+        err = traceback.format_exc()
+        await error_log(err)
+        await message.reply_text(f"❌ An error occurred:\n<code>{e}</code>", quote=True)
