@@ -37,7 +37,7 @@ async def gates_menu(client, callback_query: CallbackQuery):
         "━━━━━━━━━━━━━\n"
         "[ϟ] Auth Gates (2)\n"
         "[ϟ] Mass Checker (4)\n"
-        "[ϟ] Shopify Gates (5)\n"
+        "[ϟ] Shopify Gates (6)\n"
         "[ϟ] Charge Gates (2)",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("Auth", callback_data="auth_menu"),
@@ -138,6 +138,10 @@ async def shopify_menu_page2(client, callback_query: CallbackQuery):
         "━━━━━━━━━━━━━\n"
         "[ϟ] Name: How to Add Auto Gate\n"
         "[ϟ] Command: /autoguide\n"
+        "[ϟ] Status: Active ✅\n"
+        "━━━━━━━━━━━━━\n"
+        "[ϟ] Name: Shopify 0.98$\n"
+        "[ϟ] Command: /as cc|mes|ano|cvv\n"
         "[ϟ] Status: Active ✅\n",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("⬅️ Back", callback_data="shopify_menu"),
@@ -154,7 +158,7 @@ async def charge_menu(client, callback_query: CallbackQuery):
         "━━━━━━━━━━━━━\n"
         "[ϟ] Name: Stripe 2$ Charge\n"
         "[ϟ] Command: /chk cc|mes|ano|cvv\n"
-        "[ϟ] Status: Active ✅\n"
+        "[ϟ] Status: Off ❌\n"
         "━━━━━━━━━━━━━\n"
         "[ϟ] Name: Clover 1$\n"
         "[ϟ] Command: /cl cc|mes|ano|cvv\n"
