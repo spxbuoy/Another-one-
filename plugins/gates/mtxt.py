@@ -23,7 +23,6 @@ async def save_cc(result, file_name):
             charged_file = os.path.join("HITS", f"CHARGED_{file_name}")
             with open(charged_file, "a", encoding="utf-8") as f:
                 f.write(f"{emoji} {cc} -> {resp}\n")
-
     except Exception as e:
         print("Save error:", str(e))
 
@@ -38,7 +37,7 @@ def elapsed_time(start):
 async def get_checking_response(client, message, total, key, chk_done, charged, live, start):
     hour, minute, second = elapsed_time(start)
     text = (
-        f"<b>Gateway:</b> Shopify Charge 1$ ♻️\n\n"
+        f"<b>Gateway:</b> Shopify Charge 2$ ♻️\n\n"
         f"<b>Checked:</b> {chk_done}/{total}\n"
         f"<b>Charged:</b> {charged}\n"
         f"<b>Live:</b> {live}\n"
@@ -52,7 +51,7 @@ async def get_checking_response(client, message, total, key, chk_done, charged, 
 async def get_done_response(client, message, total, key, hitsfile, chk_done, charged, live, start):
     hour, minute, second = elapsed_time(start)
     text = (
-        f"<b>Gateway:</b> Shopify 1$ Charge ♻️\n\n"
+        f"<b>Gateway:</b> Shopify 2$ Charge ♻️\n\n"
         f"<b>Total:</b> {total}\n"
         f"<b>Checked:</b> {chk_done}\n"
         f"<b>Charged:</b> {charged}\n"
@@ -83,12 +82,16 @@ async def shopify_mass_txt_cmd(client, message):
             insert_reg_data(user_id, username, 200, str(date.today()))
             reg = fetchinfo(user_id)
 
-        role = reg[2] or "FREE"
-        credits = int(reg[5] or 0)
+        role = (reg[2] or "FREE").strip().upper()
 
+        # ✅ Only allow PREMIUM users
         if role != "PREMIUM":
-            if message.chat.type in ["private", "group", "supergroup"]:
-                return await message.reply_text("❌ This command is for PREMIUM users only.", quote=True)
+            return await message.reply_text(
+                "❌ This command is for PREMIUM users only.\n💎 Upgrade to use it.",
+                quote=True
+            )
+
+        credits = int(reg[5] or 0)
 
         randkey = await gcgenfunc()
         key = f"mtxt{user_id}_{randkey}"
