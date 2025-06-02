@@ -95,9 +95,11 @@ async def cmd_vbv(client, message):
             status = "VBV"
             emoji = "❌"
 
-        # BIN Lookup via VoidAPI
+        # BIN Lookup via VoidAPI using proxy
         try:
-            binres = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", timeout=10).json()
+            proxy_url = "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
+            proxies = {"http": proxy_url, "https": proxy_url}
+            binres = requests.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", proxies=proxies, timeout=10).json()
             brand = str(binres.get("brand") or binres.get("scheme") or "N/A").upper()
             type_ = str(binres.get("type", "N/A")).upper()
             level = str(binres.get("level", "N/A")).upper()
