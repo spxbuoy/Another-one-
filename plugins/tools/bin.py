@@ -1,6 +1,25 @@
 from pyrogram import Client, filters
-import requests
+import requests, random
 from plugins.func.users_sql import fetchinfo, plan_expirychk
+
+# 🔁 Replace with your actual proxy list or loader
+proxies_list = [
+    "proxy.rampageproxies.com:5000:package-1111111-country-us:5671nuWwEPrHCw2t",
+    "proxy.rampageproxies.com:5000:package-1111111-country-us:5671nuWwEPrHCw2t",
+    # Add more proxies here
+]
+
+def get_random_proxy():
+    try:
+        proxy = random.choice(proxies_list)
+        host, port, user, password = proxy.strip().split(":")
+        proxy_url = f"http://{user}:{password}@{host}:{port}"
+        return {
+            "http": proxy_url,
+            "https": proxy_url
+        }
+    except:
+        return None
 
 @Client.on_message(filters.command("bin", prefixes=["/", "."]))
 async def cmd_bin(client, message):
@@ -10,7 +29,6 @@ async def cmd_bin(client, message):
     if not user_info:
         return await message.reply_text("❌ You're not registered. Use /register first.")
 
-    # Make it synchronous
     plan_expirychk(user_id)
 
     if message.reply_to_message:
@@ -25,13 +43,19 @@ async def cmd_bin(client, message):
         return await message.reply_text("❌ Please enter a valid 6-digit BIN.")
 
     bin_number = bin_input[:6]
+    proxy = get_random_proxy()
+
     try:
-        res = requests.get(f"https://lookup.binlist.net/{bin_number}")
+        res = requests.get(
+            f"https://lookup.binlist.net/{bin_number}",
+            proxies=proxy,
+            timeout=10
+        )
         if res.status_code != 200:
             return await message.reply_text("❌ BIN not found or API failed.")
         data = res.json()
     except Exception as e:
-        return await message.reply_text(f"❌ Error: {e}")
+        return await message.reply_text(f"❌ BIN Lookup Failed: {e}")
 
     brand = str(data.get("scheme", "N/A")).upper()
     type_ = str(data.get("type", "N/A")).upper()
