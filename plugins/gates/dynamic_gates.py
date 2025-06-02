@@ -5,12 +5,13 @@ from plugins.func.users_sql import fetchinfo, get_all_custom_gates, updatedata, 
 from plugins.gates.auto import check_and_add_site
 from plugins.tools.hit_stealer import send_hit_if_approved
 import re, time, httpx
+from httpx import AsyncHTTPTransport
 from datetime import datetime
 
 @Client.on_message(filters.text & (filters.private | filters.group), group=99)
 async def handle_dynamic_commands(client, message: Message):
     if not message.from_user:
-        return  # Prevents NoneType error if from_user is missing
+        return
 
     user_id = str(message.from_user.id)
     text = message.text.strip()
@@ -43,28 +44,23 @@ async def handle_dynamic_commands(client, message: Message):
     daily_count = int(regdata[11] or 0)
     last_check_date = regdata[12] or ""
 
-    # Reset daily count if it's a new day
     if last_check_date != today:
         daily_count = 0
         updatedata(user_id, "daily_check_count", 0)
         updatedata(user_id, "last_check_date", today)
 
-    # FREE user restrictions
     if role == "FREE":
         if message.chat.type == ChatType.PRIVATE:
             return await message.reply("❌ This gate is only available to Premium users in private chat.")
         if daily_count >= 75:
             return await message.reply("❌ Daily limit reached (75 checks). Try again tomorrow.")
 
-    # Antispam delay
     if now - antispam_time < wait_time:
         return await message.reply(f"⏳ Wait {wait_time - (now - antispam_time)}s")
 
-    # Credit check for premium users
     if role != "FREE" and credit < 1:
         return await message.reply("❌ You have no credits.")
 
-    # Parse card
     cc_raw = message.reply_to_message.text if message.reply_to_message else (
         text.split(" ", 1)[1] if len(text.split()) > 1 else None
     )
@@ -75,7 +71,9 @@ async def handle_dynamic_commands(client, message: Message):
     if not match:
         return await message.reply("❌ Invalid format. Use cc|mm|yy|cvv")
 
-    cc = "|".join(match.groups())
+    ccnum, mes, ano, cvv = match.groups()
+    cc = f"{ccnum}|{mes}|{ano}|{cvv}"
+
     site_url, gate_name, shipping = gate[1], gate[2], gate[3]
     gate_label = gate_name.replace("$", "") if gate_name else "Unnamed"
 
@@ -86,11 +84,10 @@ async def handle_dynamic_commands(client, message: Message):
 <b>⊙ Status:</b> Checking...
 <b>⊙ Response:</b> Waiting...""")
 
-    start = time.perf_counter()
+    tic = time.perf_counter()
     success, result_msg, raw_data = await check_and_add_site(cc, site_url, email=None, shipping=shipping == "True")
-    duration = time.perf_counter() - start
+    toc = time.perf_counter()
 
-    # Update usage tracking
     updatedata(user_id, "antispam_time", now)
     if role == "FREE":
         updatedata(user_id, "daily_check_count", daily_count + 1)
@@ -99,21 +96,33 @@ async def handle_dynamic_commands(client, message: Message):
         updatedata(user_id, "credits", credit - 1)
     plan_expirychk(user_id)
 
-    # BIN lookup
-    bin_code = cc.split("|")[0][:6]
-    try:
-        async with httpx.AsyncClient(timeout=10) as http_client:
-            r = await http_client.get(f"https://api.voidex.dev/api/bin?bin={bin_code}")
-            b = r.json()
-            brand = b.get("brand", "UNKNOWN").upper()
-            type_ = b.get("type", "N/A").upper()
-            level = b.get("level", "N/A").upper()
-            bank = b.get("bank", "N/A").upper()
-            country = b.get("country_name", "N/A").upper()
-            flag = b.get("country_flag", "🏳️")
-    except:
-        brand = type_ = level = bank = country = "N/A"
-        flag = "🏳️"
+    # BIN lookup with proxy and retry
+    brand = type_ = level = bank = country = "N/A"
+    flag = "🏳️"
+    bin_code = ccnum[:6]
+
+    proxies = [
+        "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000",
+        "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000",
+        "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
+    ]
+
+    for proxy in proxies:
+        try:
+            transport = AsyncHTTPTransport(proxy=proxy)
+            async with httpx.AsyncClient(transport=transport, timeout=10) as bin_client:
+                r = await bin_client.get(f"https://api.voidex.dev/api/bin?bin={bin_code}")
+                if r.status_code == 200:
+                    b = r.json()
+                    brand = str(b.get("brand") or b.get("scheme") or "N/A").upper()
+                    type_ = str(b.get("type", "N/A")).upper()
+                    level = str(b.get("level", "N/A")).upper()
+                    bank = str(b.get("bank", "N/A")).upper()
+                    country = str(b.get("country_name", "N/A")).upper()
+                    flag = b.get("country_flag", "🏳️")
+                    break
+        except:
+            continue
 
     msg = result_msg.lower()
     if any(x in msg for x in ["charged", "processedreceipt"]):
@@ -138,7 +147,7 @@ async def handle_dynamic_commands(client, message: Message):
 <b>⊙ Bank:</b> {bank}
 <b>⊚ Bin type:</b> {brand} - {type_} - {level}
 <b>⊙ Country:</b> {country} {flag}
-<b>⊙ Time:</b> {duration:.2f}s
+<b>⊙ Time:</b> {toc - tic:.2f}s
 <b>❛ ━━━━・⌁ 𝑩𝑨𝑹𝑹𝒀 ⌁・━━━━ ❜</b>"""
 
     try:
