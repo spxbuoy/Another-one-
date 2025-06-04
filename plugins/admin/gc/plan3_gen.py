@@ -19,6 +19,8 @@ async def cmd_sub3(client: Client, message: Message):
         loading = await message.reply_text(f"⚙️ Generating {amount} Gold Giftcodes...", quote=True)
         codes = []
 
+        linked_ϟ = '<a href="https://t.me/+CUKFuQJYJTUwZmU8">ϟ</a>'  # Clickable link symbol
+
         for i in range(1, amount + 1):
             code = f"BARRY-{gcgenfunc()}-{gcgenfunc()}-{gcgenfunc()}"
             insert_plan3(code)
@@ -32,9 +34,9 @@ async def cmd_sub3(client: Client, message: Message):
         final_msg = "BARRY [GIFT CODES - GOLD]\n━━━━━━━━━━━━━\n"
         for code in codes:
             final_msg += (
-                f"[ϟ] Code: <code>{code}</code>\n"
-                f"[ϟ] Plan: Gold (30 Days)\n"
-                f"[ϟ] Status: Active ✅\n"
+                f"[{linked_ϟ}] Code: <code>{code}</code>\n"
+                f"[{linked_ϟ}] Plan: Gold (30 Days)\n"
+                f"[{linked_ϟ}] Status: Active ✅\n"
                 "━━━━━━━━━━━━━\n"
             )
         final_msg += "Redeem using: <code>/redeem CODE</code>"
