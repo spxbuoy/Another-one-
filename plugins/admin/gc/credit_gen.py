@@ -23,6 +23,8 @@ async def cmd_gc(client: Client, message: Message):
         status_msg = await message.reply_text("Generating giftcodes...", quote=True)
         codes = []
 
+        linked_ϟ = '<a href="https://t.me/+CUKFuQJYJTUwZmU8">ϟ</a>'  # Clickable ϟ link
+
         for i in range(1, count + 1):
             code = f"BARRY-{gcgenfunc()}-{gcgenfunc()}-{gcgenfunc()}"
             insert_giftcode(code, f"PREMIUM_{days}", credits, days)
@@ -36,13 +38,13 @@ async def cmd_gc(client: Client, message: Message):
         final_msg = f"BARRY [GIFTCODES - PREMIUM {days} DAYS]\n━━━━━━━━━━━━━\n"
         for code in codes:
             final_msg += (
-                f"[ϟ] Code: <code>{code}</code>\n"
-                f"[ϟ] Plan: Premium ({days} Days)\n"
-                f"[ϟ] Value: {credits} Credits\n"
-                f"[ϟ] Status: Active ✅\n"
+                f"[{linked_ϟ}] Code: <code>{code}</code>\n"
+                f"[{linked_ϟ}] Plan: Premium ({days} Days)\n"
+                f"[{linked_ϟ}] Value: {credits} Credits\n"
+                f"[{linked_ϟ}] Status: Active ✅\n"
                 "━━━━━━━━━━━━━\n"
             )
-        final_msg += "Redeem using: <code>/redeem CODE</code>"
+        final_msg += f"Redeem using: <code>/redeem CODE</code>"
 
         if len(final_msg) > 4000:
             await client.edit_message_text(
