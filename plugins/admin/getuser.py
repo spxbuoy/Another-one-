@@ -8,7 +8,6 @@ OWNER_ID = "6440962840"
 @Client.on_message(filters.command("get", ["/", "."]))
 async def cmd_get_userinfo(client: Client, message: Message):
     try:
-        # Ensure message has a sender
         if not message.from_user:
             return await message.reply_text("❌ Could not identify sender.")
 
@@ -16,7 +15,6 @@ async def cmd_get_userinfo(client: Client, message: Message):
         if user_id != OWNER_ID:
             return await message.reply_text("❌ You are not the bot owner.", quote=True)
 
-        # Get target user ID
         if message.reply_to_message and message.reply_to_message.from_user:
             target_user_id = str(message.reply_to_message.from_user.id)
         else:
@@ -36,7 +34,6 @@ async def cmd_get_userinfo(client: Client, message: Message):
             else:
                 target_user_id = input_arg
 
-        # Fetch user data from database
         data = fetchinfo(target_user_id)
         if not data:
             return await message.reply_text(
@@ -44,7 +41,6 @@ async def cmd_get_userinfo(client: Client, message: Message):
                 quote=True
             )
 
-        # Safely extract needed fields using index
         username = data[1] if len(data) > 1 else "N/A"
         status = data[2] if len(data) > 2 else "N/A"
         plan = data[3] if len(data) > 3 else "N/A"
@@ -53,18 +49,20 @@ async def cmd_get_userinfo(client: Client, message: Message):
         reg_at = data[9] if len(data) > 9 else "Unknown"
         totalkey = data[10] if len(data) > 10 else "0"
 
-        # Format reply
+        # Make [ϟ] clickable
+        linked_ϟ = '<a href="https://t.me/+CUKFuQJYJTUwZmU8">ϟ</a>'
+
         text = (
             f"𝗕𝗔𝗥𝗥𝗬 | {target_user_id} Info\n"
             f"━━━━━━━━━━━━━━\n"
-            f"[ϟ] First Name : <a href='tg://user?id={target_user_id}'>{username}</a>\n"
-            f"[ϟ] ID : <code>{target_user_id}</code>\n"
-            f"[ϟ] Status : {status}\n"
-            f"[ϟ] Plan : {plan}\n"
-            f"[ϟ] Plan Expiry : {expiry}\n"
-            f"[ϟ] Credit : {credits}\n"
-            f"[ϟ] Keys Redeemed : {totalkey}\n"
-            f"[ϟ] Registered At : {reg_at}\n"
+            f"[{linked_ϟ}] First Name : <a href='tg://user?id={target_user_id}'>{username}</a>\n"
+            f"[{linked_ϟ}] ID : <code>{target_user_id}</code>\n"
+            f"[{linked_ϟ}] Status : {status}\n"
+            f"[{linked_ϟ}] Plan : {plan}\n"
+            f"[{linked_ϟ}] Plan Expiry : {expiry}\n"
+            f"[{linked_ϟ}] Credit : {credits}\n"
+            f"[{linked_ϟ}] Keys Redeemed : {totalkey}\n"
+            f"[{linked_ϟ}] Registered At : {reg_at}\n"
             f"━━━━━━━━━━━━━━"
         )
 
