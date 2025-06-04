@@ -18,7 +18,9 @@ async def cmd_sub1(client: Client, message: Message):
 
         progress = await message.reply_text(f"⚙️ Generating {amount} Starter Giftcodes...", quote=True)
 
+        linked_ϟ = '<a href="https://t.me/+CUKFuQJYJTUwZmU8">ϟ</a>'  # linked ϟ symbol
         codes = []
+
         for i in range(1, amount + 1):
             code = f"BARRY-{gcgenfunc()}-{gcgenfunc()}-{gcgenfunc()}"
             insert_plan1(code)
@@ -29,15 +31,15 @@ async def cmd_sub1(client: Client, message: Message):
                 text=f"⏳ Generating: {i}/{amount}"
             )
 
-        # Build the full message
+        # Build message in chunks
         message_parts = []
         current_block = f"BARRY [GIFT CODES - STARTER]\n━━━━━━━━━━━━━\n"
 
         for code in codes:
             block = (
-                f"[ϟ] Code: <code>{code}</code>\n"
-                f"[ϟ] Plan: Starter (7 Days)\n"
-                f"[ϟ] Status: Active ✅\n"
+                f"[{linked_ϟ}] Code: <code>{code}</code>\n"
+                f"[{linked_ϟ}] Plan: Starter (7 Days)\n"
+                f"[{linked_ϟ}] Status: Active ✅\n"
                 "━━━━━━━━━━━━━\n"
             )
             if len(current_block + block) > 3800:
@@ -49,7 +51,10 @@ async def cmd_sub1(client: Client, message: Message):
             message_parts.append(current_block)
 
         for part in message_parts:
-            await client.send_message(chat_id=message.chat.id, text=part + "Redeem using: <code>/redeem YOUR_CODE</code>")
+            await client.send_message(
+                chat_id=message.chat.id,
+                text=part + "Redeem using: <code>/redeem YOUR_CODE</code>"
+            )
 
         await progress.delete()
 
