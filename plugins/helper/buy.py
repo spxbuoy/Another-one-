@@ -7,22 +7,24 @@ async def cmd_buy(client, message):
     try:
         user_id = str(message.from_user.id)
 
+        linked_ϟ = '<a href="https://t.me/+CUKFuQJYJTUwZmU8">ϟ</a>'
+
         text = (
             "BARRY [PREMIUM PLANS]\n"
             "━━━━━━━━━━━━━━\n"
-            "[ϟ] Starter\n"
+            f"[{linked_ϟ}] Starter\n"
             "➤ 2K Credits + 7 Days Premium\n"
             "➤ Price: 3$\n"
             "━━━━━━━━━━━━━━\n"
-            "[ϟ] Silver\n"
+            f"[{linked_ϟ}] Silver\n"
             "➤ 6K Credits + 15 Days Premium\n"
             "➤ Price: 6.5$\n"
             "━━━━━━━━━━━━━━\n"
-            "[ϟ] Gold\n"
+            f"[{linked_ϟ}] Gold\n"
             "➤ Unlimited Credits + 1 Month Premium\n"
             "➤ Price: 12$\n"
             "━━━━━━━━━━━━━━\n"
-            "[ϟ] Payment Methods:\n"
+            f"[{linked_ϟ}] Payment Methods:\n"
             "➤ BTC, LTC, USDT\n"
             "━━━━━━━━━━━━━━\n"
             "All plans are valid & Suitable.\n"
