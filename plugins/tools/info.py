@@ -4,13 +4,14 @@ from plugins.func.users_sql import fetchinfo
 
 @Client.on_message(filters.command("info", prefixes=["/", "."]))
 async def user_info(client: Client, message: Message):
-    # Target user = reply-to OR self
     target_user = message.reply_to_message.from_user if message.reply_to_message else message.from_user
     user_id = str(target_user.id)
 
     user_data = fetchinfo(user_id)
     if not user_data:
         return await message.reply_text("❌ User is not registered in the database.", quote=True)
+
+    linked_ϟ = '<a href="https://t.me/+CUKFuQJYJTUwZmU8">ϟ</a>'
 
     first_name = target_user.first_name or "No Name"
     username = f"@{target_user.username}" if target_user.username else "N/A"
@@ -30,19 +31,19 @@ async def user_info(client: Client, message: Message):
     text = f"""
 <b>BARRY | {user_id} Info</b>
 <code>━━━━━━━━━━━━━━</code>
-<b>[ϟ] First Name :</b> {first_name}
-<b>[ϟ] ID :</b> {user_id}
-<b>[ϟ] Username :</b> {username}
-<b>[ϟ] Profile Link :</b> {profile_link}
-<b>[ϟ] TG Restrictions :</b> {restricted}
-<b>[ϟ] TG Scamtag :</b> {scam}
-<b>[ϟ] TG Premium :</b> {premium}
-<b>[ϟ] Status :</b> {status}
-<b>[ϟ] Credit :</b> {credits}
-<b>[ϟ] Plan :</b> {plan}
-<b>[ϟ] Plan Expiry :</b> {expiry}
-<b>[ϟ] Keys Redeemed :</b> {keys_used}
-<b>[ϟ] Registered At :</b> {reg_date}
+<b>[{linked_ϟ}] First Name :</b> {first_name}
+<b>[{linked_ϟ}] ID :</b> {user_id}
+<b>[{linked_ϟ}] Username :</b> {username}
+<b>[{linked_ϟ}] Profile Link :</b> {profile_link}
+<b>[{linked_ϟ}] TG Restrictions :</b> {restricted}
+<b>[{linked_ϟ}] TG Scamtag :</b> {scam}
+<b>[{linked_ϟ}] TG Premium :</b> {premium}
+<b>[{linked_ϟ}] Status :</b> {status}
+<b>[{linked_ϟ}] Credit :</b> {credits}
+<b>[{linked_ϟ}] Plan :</b> {plan}
+<b>[{linked_ϟ}] Plan Expiry :</b> {expiry}
+<b>[{linked_ϟ}] Keys Redeemed :</b> {keys_used}
+<b>[{linked_ϟ}] Registered At :</b> {reg_date}
 <code>━━━━━━━━━━━━━━</code>
 """
 
