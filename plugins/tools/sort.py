@@ -1,42 +1,80 @@
-from pyrogram import Client, filters
 import re
 import io
+import os
+from pyrogram import Client, filters
 
-# Optional: remove unwanted HTML tags
-def clean_html_tags(text):
-    return re.sub(r'<.*?>', '', text)
+def smart_extract(text):
+    lines = text.splitlines()
+    cards = []
+    temp = {}
 
-# Extract and normalize any format to cc|mm|yy|cvv
-def extract_cards(text):
-    pattern = r'(?:(\d{12,19})\D{0,3}(\d{1,2})\D{0,3}(\d{2,4})\D{0,3}(\d{3,4}))'
-    matches = re.findall(pattern, text)
+    for line in lines:
+        
+        clean = line.strip()
 
-    cleaned = []
-    for cc, mm, yy, cvv in matches:
-        if not cc or not mm or not yy or not cvv:
+        
+        full_match = re.findall(r'(\d{13,16})\D+(\d{1,2})\D+(\d{2,4})\D+(\d{3,4})', clean)
+        if full_match:
+            for cc, mm, yy, cvv in full_match:
+                mm = mm.zfill(2)
+                yy = yy[-2:]
+                cards.append(f"{cc}|{mm}|{yy}|{cvv}")
             continue
-        if not cc.startswith(('3', '4', '5', '6')):
-            continue
-        if len(cvv) not in [3, 4]:
-            continue
 
-        mm = mm.zfill(2)
-        yy = yy[-2:]  # Keep last 2 digits (e.g., 2029 → 29)
-        cleaned.append(f"{cc}|{mm}|{yy}|{cvv}")
+        
+        if 'card' in clean.lower() or re.fullmatch(r'\d{13,16}', clean):
+            digits = re.findall(r'\d{13,16}', clean)
+            if digits:
+                temp['cc'] = digits[0]
+        elif 'exp' in clean.lower():
+            exp = re.findall(r'(\d{1,2})[\/\-](\d{2,4})', clean)
+            if exp:
+                temp['mm'], temp['yy'] = exp[0]
+        elif 'cvv' in clean.lower() or 'cvc' in clean.lower():
+            cvv = re.findall(r'\d{3,4}', clean)
+            if cvv:
+                temp['cvv'] = cvv[0]
 
-    return list(set(cleaned))  # Remove duplicates
+        
+        if all(k in temp for k in ['cc', 'mm', 'yy', 'cvv']):
+            mm = temp['mm'].zfill(2)
+            yy = temp['yy'][-2:]
+            cards.append(f"{temp['cc']}|{mm}|{yy}|{temp['cvv']}")
+            temp = {}
 
-@Client.on_message(filters.command("sort", prefixes=["/", "."]))
-async def sort_ccs_from_text(client, message):
-    if not message.reply_to_message or not (message.reply_to_message.text or message.reply_to_message.caption):
-        return await message.reply("❌ Reply to a message containing CCs in any format.")
+    return list(set(cards)) 
 
-    raw = clean_html_tags(message.reply_to_message.text or message.reply_to_message.caption)
-    cards = extract_cards(raw)
+@Client.on_message(filters.command("sort", [".", "/"]))
+async def filter_any_format(client, message):
+    try:
+        input_text = None
 
-    if not cards:
-        return await message.reply("❌ No valid cards found in the text.")
+        if message.reply_to_message:
+            if message.reply_to_message.document:
+                file = await message.reply_to_message.download()
+                with open(file, 'r', encoding='utf-8', errors='ignore') as f:
+                    input_text = f.read()
+                os.remove(file)
+            else:
+                input_text = message.reply_to_message.text
+        else:
+            input_text = message.text.split(maxsplit=1)[1] if len(message.text.split()) > 1 else ""
 
-    file = io.BytesIO("\n".join(cards).encode())
-    file.name = "sorted_cards.txt"
-    await message.reply_document(file, caption=f"✅ Sorted {len(cards)} cards from text.")
+        if not input_text:
+            return await message.reply("No input found to extract. ❌")
+
+        cards = smart_extract(input_text)
+
+        if cards:
+            result = "\n".join(cards)
+            if len(cards) >= 32:
+                file = io.BytesIO(result.encode())
+                file.name = "sort.txt"
+                await message.reply_document(file, caption=f"Extracted {len(cards)} cards. ✅")
+            else:
+                await message.reply_text(f"<code>{result}</code>", quote=True)
+        else:
+            await message.reply("No valid cards found in input. ⚠️", quote=True)
+
+    except Exception as e:
+        await message.reply(f"Error: {str(e)} ❌")
