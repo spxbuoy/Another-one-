@@ -82,7 +82,7 @@ f"""<code>┏━━━━━━━⍟</code>
                     "key": "VDX-SHA2X-NZ0RS-O7HAM",
                     "data": {
                         "card": fullcc,
-                        "product_url": "https://cowdengarden.com/products/donation",
+                        "product_url": "https://shop.plantlife.org.uk/products/donate-to-plantlife?variant=7046181893",
                         "email": None,
                         "proxy": "prox-au.pointtoserver.com:10799:purevpn0s9161585:E7n0nNSvISnTr7",
                         "ship_address": None,
