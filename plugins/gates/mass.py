@@ -15,7 +15,6 @@ async def cmd_mass(Client, message):
         msg_id = message.id
         chat_type = str(message.chat.type)
 
-        # Auto-registration
         reg = fetchinfo(user_id)
         if not reg:
             insert_reg_data(user_id, username, 0, str(date.today()))
@@ -46,7 +45,6 @@ async def cmd_mass(Client, message):
             wait = cooldown - (now - antispam_time)
             return await message.reply_text(f"⏳ AntiSpam: wait {wait}s")
 
-        # Extract cards from reply or main message (smart logic)
         cc_input = ""
         if message.reply_to_message and message.reply_to_message.text:
             cc_input = message.reply_to_message.text
@@ -85,20 +83,19 @@ async def cmd_mass(Client, message):
 
         for i, res in enumerate(results):
             cc = f"{cards[i][0]}|{cards[i][1]}|{cards[i][2]}|{cards[i][3]}"
-            status = res.get("status", "error").lower()
+            status = res.get("status", "error ❗").lower()
             msg = res.get("response", "No response")
 
-            if status == "approved":
+            if "approved" in status:
                 approved += 1
-                result_line = "Approved ✅"
-            elif status == "declined":
+            elif "declined" in status:
                 declined += 1
-                result_line = msg
-            else:
+            elif "error" in status:
                 error += 1
-                result_line = msg
 
-            text += f"<b>⊙ Card:</b> <code>{cc}</code>\n<b>⊙ Status:</b> {status}\n<b>⊙ Result:</b> {result_line}\n━━━━━━━━━━━━━\n"
+            text += f"<b>⊙ Card:</b> <code>{cc}</code>\n"
+            text += f"<b>⊙ Status:</b> {res['status']}\n"
+            text += f"<b>⊙ Result:</b> {msg}\n━━━━━━━━━━━━━\n"
 
         total_time = round(time.time() - start_time, 2)
         mention = user_name
