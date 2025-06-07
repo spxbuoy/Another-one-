@@ -24,36 +24,56 @@ async def async_auth_func(card: str, proxy: str = None):
                         msg = await response.text()
                 else:
                     msg = f"HTTP {response.status}"
-                    return format_result(card, msg, "error", took)
+                    return format_result(card, msg, "Error", took)
 
     except asyncio.TimeoutError:
-        return format_result(card, "Request Timeout", "error", time.perf_counter() - start)
+        return format_result(card, "Request Timeout", "Error", time.perf_counter() - start)
     except Exception as e:
-        return format_result(card, str(e), "error", time.perf_counter() - start)
+        return format_result(card, str(e), "Error", time.perf_counter() - start)
 
-    # Analyze message
+    # Convert message to lowercase for consistent matching
     msg_lower = msg.lower()
-    if "payment method added" in msg_lower or "charged" in msg_lower:
+
+    # APPROVED
+    if any(x in msg_lower for x in [
+        "charged", "thank you for your donation", "payment method added", "successfully charged"
+    ]):
         return format_result(card, msg, "Approved", took)
-    elif any(x in msg_lower for x in ["Declined", "not support", "do not honor", "pickup", "fraud", "stolen", "lost"]):
-        return format_result(card, msg, "declined", took)
+
+    # LIVE (semi-approvals, optional)
+    elif any(x in msg_lower for x in [
+        "insufficient", "incorrect_zip", "zip check", "cvc check", "incorrect_cvc",
+        "postal code mismatch", "avs check", "security code check"
+    ]):
+        return format_result(card, msg, "Live", took)
+
+    # ERROR (only timeouts, server issues)
+    elif any(x in msg_lower for x in [
+        "timeout", "rate limit", "proxy", "request timeout", "connection refused", "service unavailable"
+    ]):
+        return format_result(card, msg, "Error", took)
+
+    # EVERYTHING ELSE → DECLINED ❌
     else:
-        return format_result(card, msg, "error", took)
+        return format_result(card, msg, "Declined", took)
+
 
 def format_result(card, msg, status, time_taken):
     status_map = {
         "Approved": "✅",
+        "Live": "✅",
         "Declined": "❌",
-        "error": "❗"
+        "Error": "❗"
     }
     label = {
         "Approved": "[✓] Approved",
+        "Live": "[✓] Live",
         "Declined": "[✘] Declined",
-        "error": "[!] Error"
+        "Error": "[!] Error"
     }
 
     return {
-        "status": f"{status} {status_map[status]}",  # 👈 status includes emoji now
+        "status": f"{status} {status_map[status]}",
         "emoji": status_map[status],
         "label": label[status],
         "card": card,
