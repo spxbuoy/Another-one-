@@ -36,7 +36,7 @@ async def gates_menu(client, callback_query: CallbackQuery):
         "Choose gate type:\n"
         "━━━━━━━━━━━━━\n"
         "[ϟ] Auth Gates (2)\n"
-        "[ϟ] Mass Checker (4)\n"
+        "[ϟ] Mass Checker (6)\n"
         "[ϟ] Shopify Gates (6)\n"
         "[ϟ] Charge Gates (2)",
         reply_markup=InlineKeyboardMarkup([
@@ -73,14 +73,14 @@ async def auth_menu(client, callback_query: CallbackQuery):
     )
 
 # Mass Menu
-@Client.on_callback_query(filters.regex("mass"))
+@Client.on_callback_query(filters.regex("^mass$"))
 async def mass_check_gate(client, callback_query: CallbackQuery):
     await callback_query.message.edit_text(
-        "BARRY [MASS GATE MENU] (5 Gates)\n"
+        "BARRY [MASS GATE MENU] (Page 1/2)\n"
         "━━━━━━━━━━━━━\n"
         "[ϟ] Name: M Stripe Auth Mass\n"
         "[ϟ] Command: /mass cc|mes|ano|cvv\n"
-        "[ϟ] Status: Off ❌\n"
+        "[ϟ] Status: Active ✅\n"
         "━━━━━━━━━━━━━\n"
         "[ϟ] Name: M Stripe 1$ Charge\n"
         "[ϟ] Command: /mchk cc|mes|ano|cvv\n"
@@ -92,13 +92,28 @@ async def mass_check_gate(client, callback_query: CallbackQuery):
         "━━━━━━━━━━━━━\n"
         "[ϟ] Name: M Shopify 1.99$\n"
         "[ϟ] Command: /ms cc|mes|ano|cvv\n"
-        "[ϟ] Status: Active ✅\n"
-        "━━━━━━━━━━━━━\n"
-        "[ϟ] Name: Mass Txt Shopify 1$\n"
-        "[ϟ] Command: /mtxt (reply to .txt)\n"
         "[ϟ] Status: Active ✅\n",
         reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("➡️ Next", callback_data="mass_page2")],
             [InlineKeyboardButton("Back", callback_data="open_gates"),
+             InlineKeyboardButton("Close", callback_data="close_ui")]
+        ])
+    )
+@Client.on_callback_query(filters.regex("mass_page2"))
+async def mass_check_gate_page2(client, callback_query: CallbackQuery):
+    await callback_query.message.edit_text(
+        "BARRY [MASS GATE MENU] (Page 2/2)\n"
+        "━━━━━━━━━━━━━\n"
+        "[ϟ] Name: Mass Txt Shopify 2$\n"
+        "[ϟ] Command: /mtxt (reply to .txt)\n"
+        "[ϟ] Status: Active ✅\n"
+        "━━━━━━━━━━━━━\n"
+        "[ϟ] Name: M Shopify 0.80$\n"
+        "[ϟ] Command: /msf cc|mes|ano|cvv\n"
+        "[ϟ] Status: Active ✅\n",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("⬅️ Back", callback_data="mass")],
+            [InlineKeyboardButton("Back to Menu", callback_data="open_gates"),
              InlineKeyboardButton("Close", callback_data="close_ui")]
         ])
     )
@@ -117,7 +132,7 @@ async def shopify_menu(client, callback_query: CallbackQuery):
         "[ϟ] Command: /ss1 cc|mes|ano|cvv\n"
         "[ϟ] Status: Active ✅\n"
         "━━━━━━━━━━━━━\n"
-        "[ϟ] Name: Shopify 2$\n"
+        "[ϟ] Name: Shopify 3$\n"
         "[ϟ] Command: /ho cc|mes|ano|cvv\n"
         "[ϟ] Status: Active ✅\n"
         "━━━━━━━━━━━━━\n"
@@ -162,7 +177,7 @@ async def charge_menu(client, callback_query: CallbackQuery):
         "━━━━━━━━━━━━━\n"
         "[ϟ] Name: Clover 1$\n"
         "[ϟ] Command: /cl cc|mes|ano|cvv\n"
-        "[ϟ] Status: Active ✅\n",
+        "[ϟ] Status: Off ❌\n",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("Back", callback_data="open_gates"),
              InlineKeyboardButton("Close", callback_data="close_ui")]
