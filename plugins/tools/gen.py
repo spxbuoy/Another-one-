@@ -1,57 +1,66 @@
-import re, time, requests, random
+import re, time, random, httpx
 from io import BytesIO
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, CallbackQuery
 from plugins.func.users_sql import fetchinfo
 
-async def checkLuhn(cardNo):
-    nDigits = len(cardNo)
-    nSum = 0
-    isSecond = False
-    for i in range(nDigits - 1, -1, -1):
-        d = ord(cardNo[i]) - ord("0")
-        if isSecond:
-            d = d * 2
-        nSum += d // 10
-        nSum += d % 10
-        isSecond = not isSecond
-    return nSum % 10 == 0
 
-async def cc_genarator(cc, mes, ano, cvv):
-    cc, mes, ano, cvv = str(cc), str(mes), str(ano), str(cvv)
-    if mes != "None" and len(mes) == 1:
-        mes = "0" + mes
-    if ano != "None" and len(ano) == 2:
-        ano = "20" + ano
-    numbers = list("0123456789")
-    random.shuffle(numbers)
-    result = "".join(numbers)
-    result = cc + result
-    if cc.startswith(("34", "37")):
-        cc = result[:15]
-    else:
-        cc = result[:16]
-    for i in range(len(cc)):
-        if cc[i] == 'x':
-            cc = cc[:i] + str(random.randint(0, 9)) + cc[i+1:]
-    if mes == "None" or 'X' in mes or 'x' in mes or 'rnd' in mes:
-        mes = str(random.randint(1, 12)).zfill(2)
-    if ano == "None" or 'X' in ano or 'x' in ano or 'rnd' in ano:
-        ano = str(random.randint(2024, 2035))
-    if cvv == "None" or 'x' in cvv or 'X' in cvv or 'rnd' in cvv:
-        cvv = str(random.randint(1000, 9999)) if cc.startswith(("34", "37")) else str(random.randint(100, 999))
-    return f"{cc}|{mes}|{ano}|{cvv}"
+# Luhn Check
+def checkLuhn(cardNo):
+    sum = 0
+    alt = False
+    for i in range(len(cardNo) - 1, -1, -1):
+        n = int(cardNo[i])
+        if alt:
+            n *= 2
+            if n > 9:
+                n -= 9
+        sum += n
+        alt = not alt
+    return sum % 10 == 0
 
-async def luhn_card_genarator(cc, mes, ano, cvv, amount):
-    all_cards = []
-    for _ in range(amount):
-        while True:
-            result = await cc_genarator(cc, mes, ano, cvv)
-            ccx, mesx, anox, cvvx = result.split("|")
-            if await checkLuhn(ccx):
-                all_cards.append(f"{ccx}|{mesx}|{anox}|{cvvx}")
-                break
-    return all_cards
+
+# Fill x and correct Luhn
+def generate_luhn_card(base: str) -> str:
+    incomplete = list(base.replace("x", "0"))
+    for i in range(len(base)):
+        if base[i] == 'x':
+            incomplete[i] = str(random.randint(0, 9))
+
+    for last_digit in range(10):
+        incomplete[-1] = str(last_digit)
+        if checkLuhn("".join(incomplete)):
+            return "".join(incomplete)
+    return "".join(incomplete)
+
+
+# Random MM/YY/CVV logic
+def generate_fields(month, year, cvv, base):
+    month = (
+        str(random.randint(1, 12)).zfill(2)
+        if month in ["None", "rnd", "x", "X"] else month.zfill(2)
+    )
+    year = (
+        str(random.randint(2025, 2035))
+        if year in ["None", "rnd", "x", "X"] else ("20" + year if len(year) == 2 else year)
+    )
+    cvv = (
+        str(random.randint(1000, 9999)) if base.startswith(("34", "37"))
+        else str(random.randint(100, 999))
+        if cvv in ["None", "rnd", "x", "X"] else cvv
+    )
+    return month, year, cvv
+
+
+# Fast generator with valid Luhn
+async def luhn_card_generator_fast(base: str, month, year, cvv, count: int):
+    cards = []
+    while len(cards) < count:
+        gen = generate_luhn_card(base)
+        mes, ano, cvv = generate_fields(month, year, cvv, base)
+        cards.append(f"{gen}|{mes}|{ano}|{cvv}")
+    return cards
+
 
 @Client.on_message(filters.command("gen", ["/", "."]))
 async def gen(client: Client, message: Message):
@@ -70,7 +79,7 @@ async def gen(client: Client, message: Message):
     try:
         parts = message.text.split()
         bin_input = parts[1]
-        amount = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else None
+        amount = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 10
     except:
         return await message.reply("<b>[ϟ] Use: /gen 400363 or /gen 400363 10</b>")
 
@@ -81,22 +90,26 @@ async def gen(client: Client, message: Message):
     gen_amount = amount if amount else 10
     start = time.perf_counter()
 
+    # Async BIN info
     try:
-        bin_data = requests.get(f"https://api.voidex.dev/api/bin?bin={bin_code}", timeout=10).json()
-        brand = bin_data.get("brand", "Unknown")
-        card_type = bin_data.get("type", "Unknown")
-        level = bin_data.get("level", "Unknown")
-        bank = bin_data.get("bank", "Unknown")
-        country = bin_data.get("country_name", "Unknown")
-        flag = bin_data.get("country_flag", "🏳")
+        async with httpx.AsyncClient(timeout=10.0) as clientx:
+            r = await clientx.get(f"https://api.voidex.dev/api/bin?bin={bin_code}")
+            bin_data = r.json()
+            brand = bin_data.get("brand", "Unknown")
+            card_type = bin_data.get("type", "Unknown")
+            level = bin_data.get("level", "Unknown")
+            bank = bin_data.get("bank", "Unknown")
+            country = bin_data.get("country_name", "Unknown")
+            flag = bin_data.get("country_flag", "🏳")
     except:
         brand = card_type = level = bank = country = "Unknown"
         flag = "🏳"
 
-    cards_list = await luhn_card_genarator(bin_code + "xxxxxxxxxxxx", "rnd", "rnd", "rnd", gen_amount)
+    # Fast Gen
+    cards_list = await luhn_card_generator_fast(bin_code + "xxxxxxxxxxxx", "rnd", "rnd", "rnd", gen_amount)
     cards_raw = "\n".join(cards_list)
 
-    # Prepare .txt file
+    # .txt output
     card_file = BytesIO()
     card_file.write(cards_raw.encode("utf-8"))
     card_file.name = f"{bin_code}_cards.txt"
@@ -104,8 +117,7 @@ async def gen(client: Client, message: Message):
 
     linked_ϟ = '<a href="https://t.me/+CUKFuQJYJTUwZmU8">ϟ</a>'
 
-    if amount:
-        # Only send TXT file
+    if amount >= 15:
         await client.send_document(
             chat_id=message.chat.id,
             document=card_file,
@@ -113,7 +125,6 @@ async def gen(client: Client, message: Message):
             reply_to_message_id=message.id
         )
     else:
-        # Show message with CCs in <code> lines
         cards_formatted = "\n".join([f"<code>{card}</code>" for card in cards_list])
         duration = time.perf_counter() - start
         mention = f"<a href='tg://user?id={user_id}'>{message.from_user.first_name}</a>"
@@ -137,6 +148,7 @@ async def gen(client: Client, message: Message):
                 [InlineKeyboardButton("❌ 𝗖𝗟𝗢𝗦𝗘", callback_data="close")]
             ])
         )
+
 
 @Client.on_callback_query(filters.regex("close"))
 async def close_callback(client: Client, callback_query: CallbackQuery):
