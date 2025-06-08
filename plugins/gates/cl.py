@@ -109,7 +109,9 @@ f"""<code>┏━━━━━━━⍟</code>
         toc = time.perf_counter()
 
         # Final result
-        status = "Approved ✅" if status_raw in ["approved", "success", "live"] or any(x in card_message.lower() for x in ["charged", "insufficient", "zip", "avs", "cvv", "cvc"]) else "Declined ❌"
+        status = "Approved ✅" if status_raw in ["approved", "success", "live"] or any(x in card_message.lower() for x in [
+    "charged", "insufficient", "zip", "avs", "cvv", "cvc", "postal code does not match"
+]) else "Declined ❌"
 
         final_msg = f"""
 <code>┏━━━━━━━⍟</code>
