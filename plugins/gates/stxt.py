@@ -1,6 +1,6 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-import asyncio, time, os, httpx, traceback
+import asyncio, time, os, httpx, traceback, random
 from datetime import date
 from plugins.func.users_sql import fetchinfo, updatedata, insert_reg_data, setantispamtime
 from plugins.gates.TOOLS.getcc_for_txt import getcc_for_txt
@@ -12,7 +12,7 @@ user_pause_flags = {}
 KILTES_URL = "https://kiltes.lol/str/"
 
 async def gcgenfunc(length=6):
-    import random, string
+    import string
     return "".join(random.choice(string.ascii_uppercase + string.digits) for _ in range(length))
 
 def elapsed_time(start):
@@ -83,6 +83,7 @@ async def get_done(client, msg, total, key, hitsfile, chk_done, charged, live, s
 
 async def check_stripe(card, user_id, session):
     try:
+        await asyncio.sleep(random.uniform(1, 2))  # ✅ 1–2 second delay
         params = {
             "cc": card,
             "proxy": "proxy.proxiware.com:1337:user-default-network-res-country-us:OedbOv0g3JOQ",
