@@ -105,8 +105,8 @@ async def gen(client: Client, message: Message):
         brand = card_type = level = bank = country = "Unknown"
         flag = "🏳"
 
-    # Fast Gen
-    cards_list = await luhn_card_generator_fast(bin_code + "xxxxxxxxxxxx", "rnd", "rnd", "rnd", gen_amount)
+    # ✅ Fixed: Use only 10 x's after 6-digit BIN → total 16-digit card
+    cards_list = await luhn_card_generator_fast(bin_code + "xxxxxxxxxx", "rnd", "rnd", "rnd", gen_amount)
     cards_raw = "\n".join(cards_list)
 
     # .txt output
