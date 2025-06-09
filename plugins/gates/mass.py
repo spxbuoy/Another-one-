@@ -62,26 +62,24 @@ async def cmd_mass(Client, message):
             return await message.reply_text("❌ Premium users can only check 15 cards.")
 
         start_time = time.time()
-        reply_msg = await message.reply_text("Checking cards...⌛", reply_to_message_id=msg_id)
+        stmsg = await message.reply("Please wait...⌛")
 
         proxies = [
             "proxy.rampageproxies.com:5000:package-1111111-country-us:5671nuWwEPrHCw2t",
             "proxy.proxiware.com:1337:user-default-network-res-country-us:OedbOv0g3JOQ"
         ]
 
-        tasks = []
-        for i, c in enumerate(cards):
-            fullcc = f"{c[0]}|{c[1]}|{c[2]}|{c[3]}"
-            proxy = proxies[i % len(proxies)]
-            tasks.append(async_auth_func(fullcc, proxy))
-
-        results = await asyncio.gather(*tasks)
-
-        text = "<b> BARRY | MASS STRIPE AUTH</b>\n━━━━━━━━━━━━━\n"
+        text = ""
         approved = declined = error = 0
+        total = len(cards)
+        first_edit_done = False
 
-        for i, res in enumerate(results):
-            cc = f"{cards[i][0]}|{cards[i][1]}|{cards[i][2]}|{cards[i][3]}"
+        async def check_card(i, cc_parts):
+            nonlocal text, approved, declined, error, first_edit_done
+
+            cc = f"{cc_parts[0]}|{cc_parts[1]}|{cc_parts[2]}|{cc_parts[3]}"
+            proxy = proxies[i % len(proxies)]
+            res = await async_auth_func(cc, proxy)
             status = res.get("status", "Error ❗")
             msg = res.get("response", "No response")
 
@@ -89,22 +87,27 @@ async def cmd_mass(Client, message):
                 approved += 1
             elif "declined" in status.lower():
                 declined += 1
-            elif "error" in status.lower():
+            else:
                 error += 1
 
-            text += f"<b>⊙ Card:</b> <code>{cc}</code>\n"
-            text += f"<b>⊙ Status:</b> {status}\n"
-            text += f"<b>⊙ Result:</b> {msg}\n━━━━━━━━━━━━━\n"
+            if not first_edit_done:
+                text += f"<b>BARRY | MASS STRIPE AUTH</b>\nLimit: {total}/15\n━━━━━━━━━━━━━\n"
+                first_edit_done = True
 
-        total_time = round(time.time() - start_time, 2)
+            text += f"<b>⊙ Card:</b> <code>{cc}</code>\n<b>⊙ Status:</b> {status}\n<b>⊙ Result:</b> {msg}\n━━━━━━━━━━━━━\n"
+            await Client.edit_message_text(chat_id, stmsg.id, text)
+
+        await asyncio.gather(*(check_card(i, c) for i, c in enumerate(cards)))
+
+        elapsed = round(time.time() - start_time, 2)
         dev = '<a href="tg://user?id=6440962840">𝑩𝑨𝑹𝑹𝒀</a>'
+        summary = f"[✓] Approved: {approved}  |  [✘] Declined: {declined}  |  [!] Error: {error}"
+        text += f"{summary}\n<b>[ϟ] Time:</b> {elapsed}s\n"
+        text += f"<b>[ϟ] Checked By:</b> {user_name} [ {role} ]\n<b>[⌥] Dev:</b> {dev}"
 
-        text += f"<b>[✓] Approved:</b> {approved}  |  <b>[✘] Declined:</b> {declined}  |  <b>[!] Error:</b> {error}\n"
-        text += f"<b>[ϟ] Time:</b> {total_time}s\n<b>[ϟ] Checked By:</b> {user_name} [ {role} ]\n<b>[⌥] Dev:</b> {dev}"
-
-        await Client.edit_message_text(chat_id=chat_id, message_id=reply_msg.id, text=text, disable_web_page_preview=True)
+        await Client.edit_message_text(chat_id, stmsg.id, text)
         updatedata(user_id, "credits", credit - len(cards))
         updatedata(user_id, "antispam_time", now)
 
     except Exception as e:
-        await message.reply_text(f"❌ Mass Check Failed: {str(e)}")
+        await message.reply_text(f"❌ Mass Check Failed:\n<code>{str(e)}</code>")
