@@ -71,7 +71,7 @@ async def cmd_msf(Client, message):
         start_time = time.time()
         stmsg = await message.reply("Please wait...⌛")
 
-        text = f"<b>BARRY | M-Shopify 0.80$</b>\nLimit: {len(cards)}/15\n━━━━━━━━━━━━━\n"
+        text = f"<b>BARRY | M-Shopify 1.5$</b>\nLimit: {len(cards)}/15\n━━━━━━━━━━━━━\n"
         live, dec, err = 0, 0, 0
 
         for i, c in enumerate(cards, 1):
@@ -106,8 +106,8 @@ async def cmd_msf(Client, message):
         elapsed = round(time.time() - start_time, 2)
         summary = f"[✓] Approved: {live}  |  [✘] Declined: {dec}  |  [!] Error: {err}"
         dev = '<a href="tg://user?id=6440962840">𝑩𝑨𝑹𝑹𝒀</a>'
-        text += f"{summary}\n<b>ϟ T/t:</b> {elapsed}s | P/x: [Live ⛅]\n"
-        text += f"<b>ϟ Checked By:</b> {user_name} [ {role} ]\n<b>⌥ Dev:</b> {dev}"
+        text += f"{summary}\n<b>[ϟ] T/t:</b> {elapsed}s | P/x: [Live ⛅]\n"
+        text += f"<b>[ϟ] Checked By:</b> {user_name} [ {role} ]\n<b>⌥ Dev:</b> {dev}"
 
         await Client.edit_message_text(chat_id, stmsg.id, text)
         updatedata(user_id, "credits", credit - len(cards))
