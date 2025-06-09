@@ -1,9 +1,9 @@
 from pyrogram import Client, filters
-import re, time, asyncio
-from plugins.func.users_sql import *
-from plugins.gates.func.mass_auth_func import async_auth_func
-from datetime import date
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+import re, time, asyncio
+from datetime import date
+from plugins.func.users_sql import fetchinfo, insert_reg_data, updatedata
+from plugins.gates.func.mass_auth_func import async_auth_func
 
 @Client.on_message(filters.command("mass", prefixes=["/", "."]))
 async def cmd_mass(Client, message):
@@ -35,7 +35,7 @@ async def cmd_mass(Client, message):
             )
 
         if chat_type in ["ChatType.GROUP", "ChatType.SUPERGROUP"] and str(chat_id) not in GROUP:
-            return await message.reply_text("Unauthorized group.", message.id)
+            return await message.reply_text("Unauthorized group.")
 
         if credit < 1:
             return await message.reply_text("❌ Insufficient credit.")
@@ -45,12 +45,7 @@ async def cmd_mass(Client, message):
             wait = cooldown - (now - antispam_time)
             return await message.reply_text(f"⏳ AntiSpam: wait {wait}s")
 
-        cc_input = ""
-        if message.reply_to_message and message.reply_to_message.text:
-            cc_input = message.reply_to_message.text
-        else:
-            cc_input = message.text.replace("/mass", "").replace(".mass", "")
-
+        cc_input = message.reply_to_message.text if message.reply_to_message else message.text.replace("/mass", "").replace(".mass", "")
         found = re.findall(r'\d{12,16}\D\d{1,2}\D\d{2,4}\D\d{3,4}', cc_input)
         cards = []
         for line in found:
@@ -69,11 +64,15 @@ async def cmd_mass(Client, message):
         start_time = time.time()
         reply_msg = await message.reply_text("Checking cards...⌛", reply_to_message_id=msg_id)
 
-        proxy = "proxy.proxiware.com:1337:user-default-network-res-country-us:OedbOv0g3JOQ"
+        proxies = [
+            "proxy.rampageproxies.com:5000:package-1111111-country-us:5671nuWwEPrHCw2t",
+            "proxy.proxiware.com:1337:user-default-network-res-country-us:OedbOv0g3JOQ"
+        ]
 
         tasks = []
-        for c in cards:
+        for i, c in enumerate(cards):
             fullcc = f"{c[0]}|{c[1]}|{c[2]}|{c[3]}"
+            proxy = proxies[i % len(proxies)]
             tasks.append(async_auth_func(fullcc, proxy))
 
         results = await asyncio.gather(*tasks)
@@ -83,26 +82,25 @@ async def cmd_mass(Client, message):
 
         for i, res in enumerate(results):
             cc = f"{cards[i][0]}|{cards[i][1]}|{cards[i][2]}|{cards[i][3]}"
-            status = res.get("status", "error ❗").lower()
+            status = res.get("status", "Error ❗")
             msg = res.get("response", "No response")
 
-            if "approved" in status:
+            if "approved" in status.lower():
                 approved += 1
-            elif "declined" in status:
+            elif "declined" in status.lower():
                 declined += 1
-            elif "error" in status:
+            elif "error" in status.lower():
                 error += 1
 
             text += f"<b>⊙ Card:</b> <code>{cc}</code>\n"
-            text += f"<b>⊙ Status:</b> {res['status']}\n"
+            text += f"<b>⊙ Status:</b> {status}\n"
             text += f"<b>⊙ Result:</b> {msg}\n━━━━━━━━━━━━━\n"
 
         total_time = round(time.time() - start_time, 2)
-        mention = user_name
         dev = '<a href="tg://user?id=6440962840">𝑩𝑨𝑹𝑹𝒀</a>'
 
         text += f"<b>[✓] Approved:</b> {approved}  |  <b>[✘] Declined:</b> {declined}  |  <b>[!] Error:</b> {error}\n"
-        text += f"<b>[ϟ] Time:</b> {total_time}s\n<b>[ϟ] Checked By:</b> {mention} [ {role} ]\n<b>[⌥] Dev:</b> {dev}"
+        text += f"<b>[ϟ] Time:</b> {total_time}s\n<b>[ϟ] Checked By:</b> {user_name} [ {role} ]\n<b>[⌥] Dev:</b> {dev}"
 
         await Client.edit_message_text(chat_id=chat_id, message_id=reply_msg.id, text=text, disable_web_page_preview=True)
         updatedata(user_id, "credits", credit - len(cards))
