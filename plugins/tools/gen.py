@@ -44,12 +44,12 @@ def generate_fields(month, year, cvv, base):
         str(random.randint(2025, 2035))
         if year in ["None", "rnd", "x", "X"] else ("20" + year if len(year) == 2 else year)
     )
-    cvv = (
+    generated_cvv = (
         str(random.randint(1000, 9999)) if base.startswith(("34", "37"))
         else str(random.randint(100, 999))
         if cvv in ["None", "rnd", "x", "X"] else cvv
     )
-    return month, year, cvv
+    return month, year, generated_cvv
 
 
 # Fast generator with valid Luhn
@@ -57,8 +57,8 @@ async def luhn_card_generator_fast(base: str, month, year, cvv, count: int):
     cards = []
     while len(cards) < count:
         gen = generate_luhn_card(base)
-        mes, ano, cvv = generate_fields(month, year, cvv, base)
-        cards.append(f"{gen}|{mes}|{ano}|{cvv}")
+        mes, ano, gen_cvv = generate_fields(month, year, cvv, base)
+        cards.append(f"{gen}|{mes}|{ano}|{gen_cvv}")
     return cards
 
 
